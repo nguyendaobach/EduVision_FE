@@ -3,6 +3,12 @@ import App from "../App";
 import HomePage from "../pages/home";
 import Login from "../pages/login";
 import Register from "../pages/register";
+import Dashboard from "../pages/Dashboard";
+import GoogleLoginTest from "../pages/GoogleLoginTest";
+import TokenTest from "../pages/TokenTest";
+import TokenDemo from "../pages/TokenDemo";
+import RegistrationDemo from "../pages/RegistrationDemo";
+import PrivateRoute from "../component/PrivateRoute";
 
 const router = createBrowserRouter([
   {
@@ -16,10 +22,30 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login />,
-      },
-      {
+      },      {
         path: "/register",
         element: <Register />,
+      },      {
+        path: "/google-test",
+        element: <GoogleLoginTest />,
+      },      {
+        path: "/token-test",
+        element: <TokenTest />,
+      },      {
+        path: "/token-demo",
+        element: <TokenDemo />,
+      },
+      {
+        path: "/registration-demo",
+        element: <RegistrationDemo />,
+      },
+      {
+        path: "/dashboard",
+        element: (
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        ),
       },
     ],
   },

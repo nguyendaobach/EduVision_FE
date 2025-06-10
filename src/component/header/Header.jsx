@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import AuthStatus from "../AuthStatus";
 
 const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -12,19 +13,14 @@ const Header = () => {
 
   const toggleDropdown = (dropdown) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
-  };
-
-  const navItems = [
+  };  const navItems = [
     { label: "Tính năng", hasDropdown: true },
-    { label: "Tạo", hasDropdown: true },
-    { label: "Dành cho công việc", hasDropdown: true },
-    { label: "Tìm hiểu", hasDropdown: true },
-    { label: "Giá", hasDropdown: false },
-    { label: "Giới thiệu", hasDropdown: true },
+    { label: "Khóa học", hasDropdown: false, link: "/courses" },
+    { label: "Giá cả", hasDropdown: false, link: "/pricing" },
+    { label: "Giới thiệu", hasDropdown: false, link: "/about" },
   ];
-
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-[60] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -48,32 +44,40 @@ const Header = () => {
           </Link>
 
           {/* Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-8">
-            {navItems.map((item, index) => (
+          <nav className="hidden md:flex items-center space-x-8">            {navItems.map((item, index) => (
               <div key={index} className="relative">
-                <button
-                  onClick={() => item.hasDropdown && toggleDropdown(item.label)}
-                  className="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200"
-                >
-                  <span>{item.label}</span>
-                  {item.hasDropdown && (
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${
-                        activeDropdown === item.label ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  )}
-                </button>
+                {item.link ? (
+                  <Link
+                    to={item.link}
+                    className="flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => item.hasDropdown && toggleDropdown(item.label)}
+                    className="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    <span>{item.label}</span>
+                    {item.hasDropdown && (
+                      <svg
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          activeDropdown === item.label ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                )}
 
                 {/* Dropdown Menu */}
                 {item.hasDropdown && activeDropdown === item.label && (
@@ -99,20 +103,11 @@ const Header = () => {
                   </div>
                 )}
               </div>
-            ))}
-          </nav>
+            ))}          </nav>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={login}
-              className="hidden sm:inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-400 transition-colors duration-200"
-            >
-              Đăng nhập
-            </button>
-            <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
-              Dùng thử miễn phí
-            </button>
+            <AuthStatus />
 
             {/* Mobile menu button */}
             <button className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
