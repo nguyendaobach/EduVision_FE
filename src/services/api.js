@@ -5,7 +5,7 @@ import { logout } from '../store/slices/authSlice';
 // Create axios instance
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000,
+  timeout: 300000, // 5 minutes timeout for long-running AI operations
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,6 +14,15 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
+    // Debug: Log all requests
+    console.log('API Request:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL,
+      headers: config.headers,
+      data: config.data
+    });
+    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -21,6 +30,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -28,9 +38,23 @@ api.interceptors.request.use(
 // Response interceptor to handle common errors
 api.interceptors.response.use(
   (response) => {
+    console.log('API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data,
+      headers: response.headers
+    });
     return response;
   },
   (error) => {
+    console.error('API Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      message: error.message
+    });
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       store.dispatch(logout());
