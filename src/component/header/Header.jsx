@@ -13,9 +13,9 @@ const Header = () => {
 
   const toggleDropdown = (dropdown) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
-  };  const navItems = [
+  };
+  const navItems = [
     { label: "Tính năng", hasDropdown: true },
-    { label: "Khóa học", hasDropdown: false, link: "/courses" },
     { label: "Giá cả", hasDropdown: false, link: "/price" },
     { label: "Giới thiệu", hasDropdown: false, link: "/about" },
   ];
@@ -44,19 +44,23 @@ const Header = () => {
           </Link>
 
           {/* Navigation Menu */}
-          <nav className="hidden md:flex items-center space-x-8">            {navItems.map((item, index) => (
+
+          <nav className="hidden md:flex items-center space-x-8 mr-80 ">
+            {" "}
+            {navItems.map((item, index) => (
               <div key={index} className="relative">
                 {item.link ? (
-                  <Link
-                    to={item.link}
-                    className=" !no-underline flex items-center space-x-1 text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors duration-200"
-                  >
-                    <span>{item.label}</span>
+                  <Link to={item.link} className="!no-underline">
+                    <span className="flex text-[17px] items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2  font-medium transition-colors duration-200">
+                      {item.label}
+                    </span>
                   </Link>
                 ) : (
-                  <button
-                    onClick={() => item.hasDropdown && toggleDropdown(item.label)}
-                    className="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200"
+                  <div
+                    onClick={() =>
+                      item.hasDropdown && toggleDropdown(item.label)
+                    }
+                    className="flex items-center space-x-1 text-gray-700 hover:text-gray-900 px-3 py-2 text-[17px] font-medium transition-colors duration-200"
                   >
                     <span>{item.label}</span>
                     {item.hasDropdown && (
@@ -76,7 +80,7 @@ const Header = () => {
                         />
                       </svg>
                     )}
-                  </button>
+                  </div>
                 )}
 
                 {/* Dropdown Menu */}
@@ -103,12 +107,14 @@ const Header = () => {
                   </div>
                 )}
               </div>
-            ))}          </nav>
+            ))}{" "}
+          </nav>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-4">
-            <AuthStatus />
-
+            <div className="">
+              <AuthStatus />
+            </div>
             {/* Mobile menu button */}
             <button className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
               <svg

@@ -1,6 +1,6 @@
-import { useAuth, useAppDispatch } from '../hooks/redux';
-import { authAPI } from '../services/apiService';
-import { Link } from 'react-router-dom';
+import { useAuth, useAppDispatch } from "../hooks/redux";
+import { authAPI } from "../services/apiService";
+import { Link } from "react-router-dom";
 
 const AuthStatus = () => {
   const { user, isAuthenticated, loading } = useAuth();
@@ -10,7 +10,7 @@ const AuthStatus = () => {
     try {
       await dispatch(authAPI.logout());
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -28,7 +28,9 @@ const AuthStatus = () => {
         <div className="hidden md:flex items-center space-x-3">
           <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
             <span className="text-purple-600 font-medium text-sm">
-              {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || 'U'}
+              {user?.fullName?.charAt(0)?.toUpperCase() ||
+                user?.username?.charAt(0)?.toUpperCase() ||
+                "U"}
             </span>
           </div>
           <span className="text-gray-700 font-medium">
@@ -53,17 +55,15 @@ const AuthStatus = () => {
 
   return (
     <div className="flex items-center space-x-3">
-      <Link
-        to="/login"
-        className="text-gray-700 hover:text-purple-600 px-3 py-2 text-sm font-medium transition-colors"
-      >
-        Đăng nhập
+      <Link to="/login">
+        <div className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
+          Đăng nhập
+        </div>
       </Link>
-      <Link
-        to="/register"
-        className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md"
-      >
-        Đăng ký
+      <Link to="/register">
+        <div className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-sm hover:shadow-md">
+          Đăng ký
+        </div>
       </Link>
     </div>
   );
