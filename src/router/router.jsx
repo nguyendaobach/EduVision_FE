@@ -9,6 +9,7 @@ import TokenTest from "../pages/TokenTest";
 import TokenDemo from "../pages/TokenDemo";
 import RegistrationDemo from "../pages/RegistrationDemo";
 import PrivateRoute from "../component/PrivateRoute";
+import PricingPage from "../pages/PricePage";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
             <Dashboard />
           </PrivateRoute>
         ),
+      },
+      {
+        path: "/price",
+        element: <PricingPage />,
       },
     ],
   },

@@ -470,7 +470,7 @@ const HomePage = () => {
               Không cần kỹ năng thiết kế, không cần phần mềm phức tạp - chỉ cần vài cú click
             </p>          </div>
 
-          {/* Debug Test Button - Remove after debugging */}
+          {/* Debug Test Button - Remove after debugging
           <div className="text-center mb-8">
             <button 
               onClick={testAPI}
@@ -478,7 +478,7 @@ const HomePage = () => {
             >
               🔧 Test API Debug
             </button>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 border border-gray-100">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">{/* Chọn môn */}
