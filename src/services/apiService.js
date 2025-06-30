@@ -312,4 +312,73 @@ export const generalAPI = {
       throw error;
     }
   },
+
+  // Lấy danh sách môn học
+  getSubjects: () => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/Education/subjects");
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(
+          response.data.message || "Không thể tải danh sách môn học"
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể tải danh sách môn học";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Lấy danh sách chương/bài học
+  getChapters: (subject, grade) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get(
+        `/Education/chapters?subject=${subject}&grade=${grade}`
+      );
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(
+          response.data.message || "Không thể tải danh sách bài học"
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể tải danh sách bài học";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Sinh nội dung AI
+  generateContent: (payload) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.post("/Education/generate", payload);
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "Tạo nội dung thất bại");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Tạo nội dung thất bại";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
 };

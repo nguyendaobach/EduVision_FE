@@ -37,18 +37,19 @@ const AuthStatus = () => {
             {user?.fullName || user?.username}
           </span>
         </div>
-        <Link
-          to="/dashboard"
-          className="hidden md:inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 border border-purple-600 rounded-lg hover:bg-purple-50 transition-colors"
-        >
-          Dashboard
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          Đăng xuất
-        </button>
+        <div className="flex items-center space-x-2">
+          <Link to="/dashboard" className="!no-underline">
+            <div className="h-9.5 hidden md:inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors">
+              Dashboard
+            </div>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="hidden md:inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </div>
     );
   }
