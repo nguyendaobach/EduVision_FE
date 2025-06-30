@@ -14,7 +14,7 @@ const Login = () => {
   const { loading, error, isAuthenticated } = useAuth();
 
   // Get the redirect path from location state
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || "/dashboard";
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -31,22 +31,22 @@ const Login = () => {
       // Navigation will be handled by useEffect
     } catch (error) {
       console.error("Login failed:", error);
-      
+
       // Show more specific error messages
       let errorMessage = "Đăng nhập thất bại. ";
-      
+
       if (error.response?.status === 401) {
         errorMessage += "Email hoặc mật khẩu không đúng.";
       } else if (error.response?.status === 404) {
         errorMessage += "Tài khoản không tồn tại.";
       } else if (error.response?.status >= 500) {
         errorMessage += "Lỗi server. Vui lòng thử lại sau.";
-      } else if (error.message?.includes('Network')) {
+      } else if (error.message?.includes("Network")) {
         errorMessage += "Không thể kết nối. Kiểm tra mạng của bạn.";
       } else {
         errorMessage += "Vui lòng kiểm tra lại thông tin và thử lại.";
       }
-      
+
       notify.error(errorMessage, 10000); // Show for 10 seconds
     }
   };
@@ -61,13 +61,15 @@ const Login = () => {
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
           <div className="mx-auto w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-800">
-            Đăng nhập
-          </h2>
+          <h2 className="text-3xl font-bold text-gray-800">Đăng nhập</h2>
           <p className="text-gray-600 mt-2">Chào mừng bạn quay trở lại</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-5">
@@ -102,6 +104,14 @@ const Login = () => {
               placeholder="********"
             />
           </div>
+          <div>
+            <Link
+              to="/forgot-password"
+              className="text-purple-600 hover:underline text-sm font-semibold ml-65"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
           <button
             type="submit"
             disabled={loading}
@@ -119,13 +129,16 @@ const Login = () => {
         </div>
 
         {/* Google Login */}
-        <GoogleLoginButton 
-          onSuccess={handleGoogleSuccess}
-          disabled={loading}
-        />
+        <GoogleLoginButton onSuccess={handleGoogleSuccess} disabled={loading} />
 
         <p className="text-sm text-center text-gray-500">
-          Bạn chưa có tài khoản? <Link to="/register" className="text-purple-600 hover:underline">Đăng ký</Link>
+          Bạn chưa có tài khoản?{" "}
+          <Link
+            to="/initiate-register"
+            className="text-purple-600 hover:underline"
+          >
+            Đăng ký
+          </Link>
         </p>
       </div>
     </div>

@@ -10,6 +10,9 @@ import TokenDemo from "../pages/TokenDemo";
 import RegistrationDemo from "../pages/RegistrationDemo";
 import PrivateRoute from "../component/PrivateRoute";
 import PricingPage from "../pages/PricePage";
+import InitiateRegister from "../pages/InitiateRegister";
+import ForgotPassword from "../pages/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword";
 
 const router = createBrowserRouter([
   {
@@ -23,16 +26,32 @@ const router = createBrowserRouter([
       {
         path: "/login",
         element: <Login />,
-      },      {
+      },
+      {
         path: "/register",
         element: <Register />,
-      },      {
+      },
+      {
+        path: "/initiate-register",
+        element: <InitiateRegister />,
+      },
+      {
+        path: "/forgot-password",
+        element: <ForgotPassword />,
+      },
+      {
+        path: "/reset-password",
+        element: <ResetPassword />,
+      },
+      {
         path: "/google-test",
         element: <GoogleLoginTest />,
-      },      {
+      },
+      {
         path: "/token-test",
         element: <TokenTest />,
-      },      {
+      },
+      {
         path: "/token-demo",
         element: <TokenDemo />,
       },

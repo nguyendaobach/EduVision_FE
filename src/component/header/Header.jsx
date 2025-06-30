@@ -1,15 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import AuthStatus from "../AuthStatus";
 
 const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
-
-  const navigate = useNavigate();
-
-  const login = () => {
-    navigate("/login");
-  };
 
   const toggleDropdown = (dropdown) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
