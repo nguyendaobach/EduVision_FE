@@ -13,6 +13,7 @@ import PricingPage from "../pages/PricePage";
 import InitiateRegister from "../pages/InitiateRegister";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
+import PaymentSuccess from "../pages/PaymentSuccess";
 
 const router = createBrowserRouter([
   {
@@ -70,6 +71,14 @@ const router = createBrowserRouter([
       {
         path: "/price",
         element: <PricingPage />,
+      },
+      {
+        path: "/payment-success",
+        element: (
+          <PrivateRoute>
+            <PaymentSuccess />
+          </PrivateRoute>
+        ),
       },
     ],
   },

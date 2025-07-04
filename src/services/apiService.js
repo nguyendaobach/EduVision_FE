@@ -480,19 +480,57 @@ export const generalAPI = {
     }
   },
 
-  // Kiểm tra trạng thái thanh toán (GET)
+  // Lấy trạng thái thanh toán hiện tại (GET)
   checkPaymentStatus: (params) => async (dispatch) => {
     // params: { orderCode: string }
     try {
       dispatch(apiStart());
-      const response = await api.get("/payments/status", { params });
-      dispatch(apiSuccess(response.data.result));
-      return response.data.result;
+      console.log("Getting payment status for:", params.orderCode);
+      
+      // Sử dụng GET với orderCode trong URL path
+      const response = await api.get(`/orders/payment-status/${params.orderCode}`);
+      console.log("Payment status response:", response.data);
+      
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "Lấy trạng thái thanh toán thất bại");
+      }
     } catch (error) {
+      console.error("Payment status check error:", error);
       const errorMessage =
+        error.response?.data?.Message ||
         error.response?.data?.message ||
         error.message ||
-        "Không thể kiểm tra trạng thái thanh toán";
+        "Không thể lấy trạng thái thanh toán";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Kích hoạt kiểm tra payment hết hạn (POST)
+  checkExpiredPayments: () => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      console.log("Triggering expired payments check");
+      
+      const response = await api.post("/orders/check-expired-payments");
+      console.log("Expired payments check response:", response.data);
+      
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "Kiểm tra payment hết hạn thất bại");
+      }
+    } catch (error) {
+      console.error("Check expired payments error:", error);
+      const errorMessage =
+        error.response?.data?.Message ||
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể kiểm tra payment hết hạn";
       dispatch(apiFailure(errorMessage));
       throw error;
     }
@@ -502,34 +540,130 @@ export const generalAPI = {
   paymentHistory: (userId) => async (dispatch) => {
     try {
       dispatch(apiStart());
+      console.log("Calling payment history API for userId:", userId);
       const response = await api.get("/payments/history", {
         params: { userId },
       });
-      dispatch(apiSuccess(response.data));
-      return response.data;
+      console.log("Payment history API response:", response.data);
+      
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } else {
+        throw new Error(response.data.message || "Lấy lịch sử thanh toán thất bại");
+      }
     } catch (error) {
+      console.error("Payment history API error:", error);
       const errorMessage =
+        error.response?.data?.Message ||
         error.response?.data?.message ||
         error.message ||
-        "Không thể kiểm tra trạng thái thanh toán";
+        "Không thể tải lịch sử thanh toán";
       dispatch(apiFailure(errorMessage));
       throw error;
     }
   },
 
-  // Tạo link thanh toán quota (POST)
-  createPaymentLink: (payload) => async (dispatch) => {
-    // payload: { userId: number, amount: number, returnUrl: string, cancelUrl: string }
+  // Xử lý callback thanh toán (GET)
+  handlePaymentCallback: (params) => async (dispatch) => {
+    // params: { orderCode: string, status: string, etc. }
     try {
       dispatch(apiStart());
-      const response = await api.post("/orders/payment-links", payload);
+      const response = await api.get("/orders/payment-callback", { params });
       dispatch(apiSuccess(response.data.result));
       return response.data.result;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
+        "Không thể xử lý callback thanh toán";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Tạo link thanh toán quota (POST) - TẠO payment mới
+  createPaymentLink: (payload) => async (dispatch) => {
+    // payload: { userId: number, amount: number, returnUrl: string, cancelUrl: string }
+    try {
+      dispatch(apiStart());
+      console.log("🆕 CREATE PAYMENT: Creating NEW payment with payload:", payload);
+      console.log("🆕 This WILL create a new payment in database");
+      
+      const response = await api.post("/orders/payment-links", payload);
+      console.log("✅ CREATE PAYMENT: New payment created successfully:", response.data);
+      
+      dispatch(apiSuccess(response.data.result));
+      return response.data.result;
+    } catch (error) {
+      console.error("❌ CREATE PAYMENT: Failed to create new payment:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
         "Không thể tạo link thanh toán";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Lấy lại checkout URL của payment cũ (POST) - KHÔNG tạo payment mới
+  retryPayment: (orderCode) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      console.log("⚠️ RETRY PAYMENT: Getting existing checkout URL for orderCode:", orderCode);
+      console.log("⚠️ This should NOT create a new payment, only return existing checkout URL");
+      
+      // Validate orderCode
+      if (!orderCode || orderCode.toString().trim() === '') {
+        throw new Error("OrderCode không hợp lệ");
+      }
+      
+      // API này chỉ lấy lại checkout URL của payment đã tồn tại
+      // KHÔNG được tạo payment mới trong database  
+      console.log("🔄 Using POST method for retry API: /orders/" + orderCode + "/retry");
+      
+      const requestBody = {
+        returnUrl: `${window.location.origin}/payment-success`,
+        cancelUrl: `${window.location.origin}/dashboard?cancelled=true`
+      };
+      
+      console.log("🔄 Request body:", requestBody);
+      console.log("🔄 Full URL:", `/orders/${orderCode}/retry`);
+      
+      const response = await api.post(`/orders/${orderCode}/retry`, requestBody);
+      console.log("✅ RETRY PAYMENT: Checkout URL response:", response.data);
+      
+      if (response.data.code === 200) {
+        console.log("✅ RETRY PAYMENT: Successfully got existing checkout URL");
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "Không thể lấy lại link thanh toán");
+      }
+    } catch (error) {
+      console.error("❌ RETRY PAYMENT: Get checkout URL error:", error);
+      console.error("❌ RETRY PAYMENT: Error response data:", error.response?.data);
+      console.error("❌ RETRY PAYMENT: Error status:", error.response?.status);
+      console.error("❌ RETRY PAYMENT: Error config:", error.config);
+      
+      // Log chi tiết response để debug
+      if (error.response?.data) {
+        console.error("❌ RETRY PAYMENT: Detailed error response:", JSON.stringify(error.response.data, null, 2));
+      }
+      
+      const errorMessage =
+        error.response?.data?.Message ||
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.title ||
+        error.message ||
+        "Không thể lấy lại link thanh toán";
+      
+      // Handle specific error cases
+      if (error.response?.data?.message === "Payment is still pending and not expired yet") {
+        throw new Error("Thanh toán vẫn còn hiệu lực. Vui lòng chờ hết hạn để retry.");
+      }
+      
       dispatch(apiFailure(errorMessage));
       throw error;
     }
