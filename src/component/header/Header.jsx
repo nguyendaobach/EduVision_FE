@@ -9,9 +9,9 @@ const Header = () => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
   };
   const navItems = [
-    { label: "Tính năng", hasDropdown: true },
-    { label: "Giá cả", hasDropdown: false, link: "/price" },
-    { label: "Giới thiệu", hasDropdown: false, link: "/about" },
+    { label: "Trang Chủ", link: "/" },
+    { label: "Giá cả", link: "/price" },
+    { label: "Giới thiệu", link: "/about" },
   ];
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-[60] shadow-sm">
@@ -39,7 +39,7 @@ const Header = () => {
 
           {/* Navigation Menu */}
 
-          <nav className="hidden md:flex items-center space-x-8 mr-80 ">
+          <nav className="hidden md:flex items-center space-x-8 justify-start mr-80 ">
             {" "}
             {navItems.map((item, index) => (
               <div key={index} className="relative">
@@ -74,30 +74,6 @@ const Header = () => {
                         />
                       </svg>
                     )}
-                  </div>
-                )}
-
-                {/* Dropdown Menu */}
-                {item.hasDropdown && activeDropdown === item.label && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    >
-                      Option 1
-                    </a>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    >
-                      Option 2
-                    </a>
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    >
-                      Option 3
-                    </a>
                   </div>
                 )}
               </div>
@@ -142,12 +118,8 @@ const Header = () => {
             </a>
           ))}
           <div className="pt-4 pb-2 border-t border-gray-200">
-            <a
-              href="#"
-              className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
-            >
-              Đăng nhập
-            </a>
+            {/* Thay nút Đăng nhập bằng AuthStatus cho mobile */}
+            <AuthStatus />
           </div>
         </div>
       </div>

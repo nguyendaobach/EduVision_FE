@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAppDispatch, useAuth, useNotify } from "../hooks/redux";
 import { authAPI } from "../services/apiService";
 import GoogleLoginButton from "../component/GoogleLoginButton";
+import { getFcmToken, listenFcmMessage } from "../utils/firebase";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -26,15 +27,29 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await dispatch(authAPI.login({ email, password }));
-      notify.success("Đăng nhập thành công!");
-      // Navigation will be handled by useEffect
+      const loginResult = await dispatch(authAPI.login({ email, password }));
+      // Kiểm tra kết quả trả về từ Redux thunk
+      const loginData = loginResult?.payload || loginResult;
+      console.log("Login Result:", loginData);
+      if (loginData !== null || loginData.code === 200) {
+        notify.success("Đăng nhập thành công!");
+      }
+      // Gửi FCM token nếu có
+      const fcmToken = await getFcmToken();
+      console.log("FCM Token:", fcmToken);
+      if (fcmToken) {
+        const fcmResult = await dispatch(authAPI.fcmToken(fcmToken));
+        const fcmData = fcmResult?.payload || fcmResult;
+        if (fcmData && fcmData.code !== 200) {
+          notify.error(
+            "Đăng nhập thành công nhưng gửi FCM token thất bại!",
+            10000
+          );
+        }
+        localStorage.setItem("fcmToken", fcmToken);
+      }
     } catch (error) {
-      console.error("Login failed:", error);
-
-      // Show more specific error messages
       let errorMessage = "Đăng nhập thất bại. ";
-
       if (error.response?.status === 401) {
         errorMessage += "Email hoặc mật khẩu không đúng.";
       } else if (error.response?.status === 404) {
@@ -43,17 +58,62 @@ const Login = () => {
         errorMessage += "Lỗi server. Vui lòng thử lại sau.";
       } else if (error.message?.includes("Network")) {
         errorMessage += "Không thể kết nối. Kiểm tra mạng của bạn.";
+      } else if (error.message) {
+        errorMessage += error.message;
       } else {
         errorMessage += "Vui lòng kiểm tra lại thông tin và thử lại.";
       }
-
-      notify.error(errorMessage, 10000); // Show for 10 seconds
+      notify.error(errorMessage, 10000);
     }
   };
 
-  const handleGoogleSuccess = (result) => {
-    notify.success("Đăng nhập Google thành công!");
-    // Navigation will be handled by useEffect when isAuthenticated changes
+  const handleGoogleSuccess = async (googleResponse) => {
+    try {
+      // Lấy idToken từ Google response
+      const idToken =
+        googleResponse?.credential ||
+        googleResponse?.tokenId ||
+        googleResponse?.idToken;
+      if (!idToken) {
+        notify.error("Không lấy được Google ID Token.");
+        return;
+      }
+      console.log("Google ID Token:", idToken);
+      // Gọi API đăng nhập Google
+      const loginResult = await dispatch(authAPI.googleLogin(idToken));
+      const loginData = loginResult?.payload || loginResult;
+      if (loginData !== null || loginData.code === 200) {
+        notify.success("Đăng nhập Google thành công!");
+      }
+      // Gửi FCM token nếu có
+      const fcmToken = await getFcmToken();
+      if (fcmToken) {
+        const fcmResult = await dispatch(authAPI.fcmToken(fcmToken));
+        const fcmData = fcmResult?.payload || fcmResult;
+        if (fcmData && fcmData.code !== 200) {
+          notify.error(
+            "Đăng nhập Google thành công nhưng gửi FCM token thất bại!",
+            10000
+          );
+        }
+        localStorage.setItem("fcmToken", fcmToken);
+      }
+      // Navigation sẽ được handle bởi useEffect khi isAuthenticated thay đổi
+    } catch (error) {
+      let errorMessage = "Đăng nhập Google thất bại. ";
+      if (error.response?.status === 401) {
+        errorMessage += "Tài khoản Google không hợp lệ.";
+      } else if (error.response?.status >= 500) {
+        errorMessage += "Lỗi server. Vui lòng thử lại sau.";
+      } else if (error.message?.includes("Network")) {
+        errorMessage += "Không thể kết nối. Kiểm tra mạng của bạn.";
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Vui lòng thử lại.";
+      }
+      notify.error(errorMessage, 10000);
+    }
   };
 
   return (
@@ -115,7 +175,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 font-semibold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            className="w-full py-3 font-semibold text-white bg-gradient-to-r from-purple-500 to-purple-600 rounded hover:from-purple-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
             {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
@@ -129,7 +189,11 @@ const Login = () => {
         </div>
 
         {/* Google Login */}
-        <GoogleLoginButton onSuccess={handleGoogleSuccess} disabled={loading} />
+        <GoogleLoginButton
+          className="rounded"
+          onSuccess={handleGoogleSuccess}
+          disabled={loading}
+        />
 
         <p className="text-sm text-center text-gray-500">
           Bạn chưa có tài khoản?{" "}

@@ -13,7 +13,7 @@ export const authAPI = {
   login: (credentials) => async (dispatch) => {
     try {
       dispatch(loginStart());
-      const response = await api.post("/authentication/sessions", {
+      const response = await api.post("/authentication/login", {
         username: credentials.email,
         password: credentials.password,
       });
@@ -36,7 +36,7 @@ export const authAPI = {
   googleLogin: (idToken) => async (dispatch) => {
     try {
       dispatch(loginStart());
-      const response = await api.post("/Auth/google-login", {
+      const response = await api.post("/authentication/google-session", {
         idToken: idToken,
       });
 
@@ -241,6 +241,28 @@ export const authAPI = {
       throw error;
     }
   },
+
+  fcmToken: (fcmToken) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.post("/authentication/fcm-token", {
+        fcmToken,
+      });
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "FCM token update failed");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "FCM token update failed";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
 };
 
 // General API calls
@@ -361,22 +383,153 @@ export const generalAPI = {
     }
   },
 
-  // Sinh nội dung AI
-  generateContent: (payload) => async (dispatch) => {
+  // Tạo slide cho bài học
+  createSlides: (payload) => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.post("/Education/generate", payload);
+      const response = await api.post("/education/slides", payload);
       if (response.data.code === 200) {
         dispatch(apiSuccess(response.data.result));
         return response.data.result;
       } else {
-        throw new Error(response.data.message || "Tạo nội dung thất bại");
+        throw new Error(response.data.message || "Tạo slide thất bại");
       }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Tạo slide thất bại";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Tạo video bài giảng
+  createVideo: (payload) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.post("/education/videos", payload);
+      if (response.data.code === 200) {
+        dispatch(apiSuccess(response.data.result));
+        return response.data.result;
+      } else {
+        throw new Error(response.data.message || "Tạo video thất bại");
+      }
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Tạo video thất bại";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Kiểm tra quota còn lại cho user (GET)
+  checkQuotaAvailability:
+    ({ userId, quotaType }) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/quotas/availability", {
+          params: { userId, quotaType },
+        });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể kiểm tra quota";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+
+  // Tiêu hao quota (POST)
+  useQuota:
+    ({ userId, quotaType }) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.post("/quotas/usage", { userId, quotaType });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể tiêu hao quota";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+
+  // Lấy lịch sử quota (GET)
+  getQuotaHistory: (userId) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/quotas/history", {
+        params: { userId },
+      });
+      dispatch(apiSuccess(response.data));
+      return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Tạo nội dung thất bại";
+        "Không thể lấy lịch sử quota";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Kiểm tra trạng thái thanh toán (GET)
+  checkPaymentStatus: (params) => async (dispatch) => {
+    // params: { orderCode: string }
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/payments/status", { params });
+      dispatch(apiSuccess(response.data.result));
+      return response.data.result;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể kiểm tra trạng thái thanh toán";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Lấy lịch sử thanh toán (GET)
+  paymentHistory: (userId) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/payments/history", {
+        params: { userId },
+      });
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể kiểm tra trạng thái thanh toán";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  // Tạo link thanh toán quota (POST)
+  createPaymentLink: (payload) => async (dispatch) => {
+    // payload: { userId: number, amount: number, returnUrl: string, cancelUrl: string }
+    try {
+      dispatch(apiStart());
+      const response = await api.post("/orders/payment-links", payload);
+      dispatch(apiSuccess(response.data.result));
+      return response.data.result;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể tạo link thanh toán";
       dispatch(apiFailure(errorMessage));
       throw error;
     }

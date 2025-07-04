@@ -33,9 +33,6 @@ const AuthStatus = () => {
                 "U"}
             </span>
           </div>
-          <span className="text-gray-700 font-medium">
-            {user?.fullName || user?.username}
-          </span>
         </div>
         <div className="flex items-center space-x-2">
           <Link to="/dashboard" className="!no-underline">
@@ -45,7 +42,7 @@ const AuthStatus = () => {
           </Link>
           <button
             onClick={handleLogout}
-            className="hidden md:inline-flex items-center px-3 py-1.5 text-sm font-medium text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors"
+            className="hidden w-100 md:inline-flex items-center px-3 py-1.5 text-[10px] font-medium text-purple-600 border border-purple-600 rounded hover:bg-purple-50 transition-colors"
           >
             Đăng xuất
           </button>

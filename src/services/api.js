@@ -3,12 +3,14 @@ import { store } from "../store/store";
 import { logout } from "../store/slices/authSlice";
 
 // Create axios instance
-const api = axios.create({
-  baseURL: "https://localhost:7258/api",
-  timeout: 300000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+const api = axios.create({ baseURL: "https://localhost:7258/api" });
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  console.log("TOKEN", token);
+  return config;
 });
 
 // Request interceptor to add auth token

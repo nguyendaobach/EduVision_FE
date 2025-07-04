@@ -1,7 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+// Lấy user từ localStorage nếu có
+const savedUser = localStorage.getItem("user");
+
 const initialState = {
-  user: null,
+  user: savedUser ? JSON.parse(savedUser) : null,
   token: localStorage.getItem("token"),
   isAuthenticated: !!localStorage.getItem("token"),
   loading: false,
@@ -20,6 +23,7 @@ const authSlice = createSlice({
       state.loading = false;
       state.isAuthenticated = true;
       state.user = {
+        userId: action.payload.userId,
         username: action.payload.username,
         fullName: action.payload.fullName,
         email: action.payload.email,
@@ -37,6 +41,7 @@ const authSlice = createSlice({
         "refreshTokenExpiresAt",
         action.payload.refreshTokenExpiresAt
       );
+      localStorage.setItem("user", JSON.stringify(state.user));
     },
     loginFailure: (state, action) => {
       state.loading = false;
@@ -45,6 +50,7 @@ const authSlice = createSlice({
       state.token = null;
       state.error = action.payload;
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
     logout: (state) => {
       state.user = null;
@@ -52,6 +58,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
     },
     clearError: (state) => {
       state.error = null;
