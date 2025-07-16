@@ -9,7 +9,7 @@ const Header = () => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
   };
   const navItems = [
-    { label: "Trang Chủ", link: "/" },
+    { label: "Trang chủ", link: "/" },
     { label: "Giá cả", link: "/price" },
     { label: "Giới thiệu", link: "/about" },
   ];

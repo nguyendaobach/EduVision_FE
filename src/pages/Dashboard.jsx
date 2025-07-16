@@ -11,6 +11,38 @@ const Dashboard = () => {
   const [loadingPayment, setLoadingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [lastPaymentOrderCode, setLastPaymentOrderCode] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // State cho form chỉnh sửa thông tin tài khoản
+  const [editUser, setEditUser] = useState({
+    fullName: "",
+    phoneNumber: "",
+    avatarUrl: "",
+    address: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editSuccess, setEditSuccess] = useState(null);
+  const [editError, setEditError] = useState(null);
+
+  // State cho slides và videos
+  const [slides, setSlides] = useState([]);
+  const [videos, setVideos] = useState([]);
+  const [loadingSlides, setLoadingSlides] = useState(false);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [errorSlides, setErrorSlides] = useState(null);
+  const [errorVideos, setErrorVideos] = useState(null);
+
+  // State cho phân trang slide/video
+  const [slidePage, setSlidePage] = useState(0);
+  const [videoPage, setVideoPage] = useState(0);
+  const ITEMS_PER_PAGE = 10;
+
+  // State cho modal xem chi tiết
+  const [preview, setPreview] = useState(null); // {type: 'slide'|'video', url: string}
+
+  // State cho lịch sử nạp tiền
+  const [paymentPage, setPaymentPage] = useState(0);
+  const PAYMENT_PER_PAGE = 10;
 
   // Function to fetch payment history
   const fetchPaymentHistory = async () => {
@@ -18,40 +50,29 @@ const Dashboard = () => {
     setLoadingPayment(true);
     setPaymentError(null);
     try {
-      console.log("Fetching payment history for userId:", user.userId);
       const res = await dispatch(generalAPI.paymentHistory(user.userId));
-      console.log("Payment history response:", res);
-      
       let historyArr = [];
-      
-      // Check different possible response structures
-      if (Array.isArray(res)) {
-        // Direct array response
-        historyArr = res;
-      } else if (res?.result) {
-        if (Array.isArray(res.result.payments)) {
+      if (Array.isArray(res)) historyArr = res;
+      else if (res?.result) {
+        if (Array.isArray(res.result.payments))
           historyArr = res.result.payments;
-        } else if (Array.isArray(res.result)) {
-          historyArr = res.result;
-        } else if (Array.isArray(res.result.data)) {
-          historyArr = res.result.data;
-        } else if (Array.isArray(res.result.history)) {
+        else if (Array.isArray(res.result)) historyArr = res.result;
+        else if (Array.isArray(res.result.data)) historyArr = res.result.data;
+        else if (Array.isArray(res.result.history))
           historyArr = res.result.history;
-        }
       } else if (res?.data && Array.isArray(res.data)) {
-        // Data in data field
         historyArr = res.data;
       }
-      
       setPaymentHistory(Array.isArray(historyArr) ? historyArr : []);
-      console.log("Payment history set:", historyArr);
-      console.log("First payment item structure:", historyArr[0]);
+      setPaymentPage(0); // reset về trang đầu khi load mới
     } catch (error) {
-      console.error("Error fetching payment history:", error);
-      const errorMsg = error?.response?.data?.Message || error?.message || 'Lỗi không xác định';
+      const errorMsg =
+        error?.response?.data?.Message ||
+        error?.message ||
+        "Lỗi không xác định";
       setPaymentError(errorMsg);
       notify.error(`Không thể tải lịch sử nạp tiền: ${errorMsg}`);
-      setPaymentHistory([]); // Set empty array on error
+      setPaymentHistory([]);
     } finally {
       setLoadingPayment(false);
     }
@@ -65,14 +86,16 @@ const Dashboard = () => {
         generalAPI.checkPaymentStatus({ orderCode })
       );
       console.log("Status check result:", result);
-      
+
       // Update payment history with new status
-      setPaymentHistory(prev => prev.map(payment => 
-        (payment.orderCode === orderCode || payment.paymentId === orderCode) 
-          ? { ...payment, status: result?.status || result?.payload?.status }
-          : payment
-      ));
-      
+      setPaymentHistory((prev) =>
+        prev.map((payment) =>
+          payment.orderCode === orderCode || payment.paymentId === orderCode
+            ? { ...payment, status: result?.status || result?.payload?.status }
+            : payment
+        )
+      );
+
       return result;
     } catch (error) {
       console.error("Error checking specific payment status:", error);
@@ -85,7 +108,9 @@ const Dashboard = () => {
     try {
       console.log("Dashboard: Triggering expired payment check");
       await dispatch(generalAPI.checkExpiredPayments());
-      console.log("Dashboard: Expired payment check completed, refreshing history");
+      console.log(
+        "Dashboard: Expired payment check completed, refreshing history"
+      );
       // Sau khi check expired, refresh payment history
       await fetchPaymentHistory();
     } catch (error) {
@@ -103,7 +128,7 @@ const Dashboard = () => {
   // Listen cho payment updates từ PaymentSuccess page
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'lastUpdatedPayment') {
+      if (e.key === "lastUpdatedPayment") {
         console.log("Dashboard: Detected payment update from PaymentSuccess");
         // Refresh payment history để hiển thị status mới
         fetchPaymentHistory();
@@ -116,19 +141,21 @@ const Dashboard = () => {
     };
 
     // Listen cho storage events từ PaymentSuccess
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('paymentUpdate', handlePaymentUpdate);
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("paymentUpdate", handlePaymentUpdate);
 
     // Check xem có payment update trong localStorage không
-    const lastUpdatedPayment = localStorage.getItem('lastUpdatedPayment');
+    const lastUpdatedPayment = localStorage.getItem("lastUpdatedPayment");
     if (lastUpdatedPayment) {
       try {
         const payment = JSON.parse(lastUpdatedPayment);
         // Nếu payment được update trong vòng 30 giây thì refresh
         if (Date.now() - payment.timestamp < 30000) {
-          console.log("Dashboard: Found recent payment update, refreshing history");
+          console.log(
+            "Dashboard: Found recent payment update, refreshing history"
+          );
           fetchPaymentHistory();
-          localStorage.removeItem('lastUpdatedPayment'); // Clear sau khi xử lý
+          localStorage.removeItem("lastUpdatedPayment"); // Clear sau khi xử lý
         }
       } catch (error) {
         console.error("Error parsing lastUpdatedPayment:", error);
@@ -136,18 +163,20 @@ const Dashboard = () => {
     }
 
     // Check refreshDashboard flag từ PaymentSuccess
-    const shouldRefresh = localStorage.getItem('refreshDashboard');
-    if (shouldRefresh === 'true') {
-      console.log("Dashboard: refreshDashboard flag detected, refreshing history");
-      localStorage.removeItem('refreshDashboard');
+    const shouldRefresh = localStorage.getItem("refreshDashboard");
+    if (shouldRefresh === "true") {
+      console.log(
+        "Dashboard: refreshDashboard flag detected, refreshing history"
+      );
+      localStorage.removeItem("refreshDashboard");
       if (user?.userId) {
         fetchPaymentHistory();
       }
     }
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('paymentUpdate', handlePaymentUpdate);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("paymentUpdate", handlePaymentUpdate);
     };
   }, []);
 
@@ -156,7 +185,7 @@ const Dashboard = () => {
     const handleFocus = async () => {
       if (user?.userId) {
         console.log("Dashboard: Window focused, checking for expired payments");
-        
+
         // Check for expired payments first
         try {
           await dispatch(generalAPI.checkExpiredPayments());
@@ -164,7 +193,7 @@ const Dashboard = () => {
         } catch (error) {
           console.error("Dashboard: Error checking expired payments:", error);
         }
-        
+
         // Then refresh payment history
         await fetchPaymentHistory();
       }
@@ -191,6 +220,97 @@ const Dashboard = () => {
     }
   }, [lastPaymentOrderCode]);
 
+  // Lấy slides và videos khi mount
+  useEffect(() => {
+    const fetchSlides = async () => {
+      setLoadingSlides(true);
+      setErrorSlides(null);
+      try {
+        const res = await dispatch(generalAPI.getUserSlides());
+        let arr = [];
+        if (Array.isArray(res)) arr = res;
+        else if (res?.result)
+          arr = Array.isArray(res.result) ? res.result : res.result.data || [];
+        else if (res?.data && Array.isArray(res.data)) arr = res.data;
+        setSlides(arr);
+      } catch (e) {
+        setErrorSlides(e?.message || "Không thể tải slide");
+        setSlides([]);
+      } finally {
+        setLoadingSlides(false);
+      }
+    };
+    const fetchVideos = async () => {
+      setLoadingVideos(true);
+      setErrorVideos(null);
+      try {
+        const res = await dispatch(generalAPI.getUserVideos());
+        let arr = [];
+        if (Array.isArray(res)) arr = res;
+        else if (res?.result)
+          arr = Array.isArray(res.result) ? res.result : res.result.data || [];
+        else if (res?.data && Array.isArray(res.data)) arr = res.data;
+        setVideos(arr);
+      } catch (e) {
+        setErrorVideos(e?.message || "Không thể tải video");
+        setVideos([]);
+      } finally {
+        setLoadingVideos(false);
+      }
+    };
+    fetchSlides();
+    fetchVideos();
+  }, [dispatch]);
+
+  // Lấy thông tin user khi vào trang hoặc sau khi cập nhật thành công
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await dispatch(generalAPI.getCurrentUser());
+        let data = res?.result || res?.data || res;
+        setCurrentUser(data);
+        setEditUser({
+          fullName: data?.fullName || "",
+          phoneNumber: data?.phoneNumber || "",
+          avatarUrl: data?.avatarUrl || "",
+          address: data?.address || "",
+        });
+      } catch (e) {
+        // Có thể show lỗi nếu muốn
+      }
+    };
+    fetchCurrentUser();
+  }, [dispatch]);
+
+  // Xử lý lưu thông tin tài khoản
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    setEditLoading(true);
+    setEditError(null);
+    setEditSuccess(null);
+    try {
+      const payload = { ...editUser };
+      await dispatch(generalAPI.updateCurrentUser(payload));
+      setEditSuccess("Cập nhật thành công!");
+      notify.success("Cập nhật thông tin thành công!");
+      // Lấy lại thông tin mới nhất
+      const res = await dispatch(generalAPI.getCurrentUser());
+      let data = res?.result || res?.data || res;
+      setCurrentUser(data);
+      setEditUser({
+        fullName: data?.fullName || "",
+        phoneNumber: data?.phoneNumber || "",
+        avatarUrl: data?.avatarUrl || "",
+        address: data?.address || "",
+      });
+    } catch (error) {
+      setEditError(error?.message || "Cập nhật thất bại");
+      notify.error("Cập nhật thất bại: " + (error?.message || ""));
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await dispatch(authAPI.logout());
@@ -214,7 +334,7 @@ const Dashboard = () => {
       );
       return;
     }
-    
+
     try {
       setLoadingPayment(true);
       const returnUrl = `${window.location.origin}/payment-success`;
@@ -229,8 +349,8 @@ const Dashboard = () => {
       );
       if (res?.checkoutUrl) {
         // Lưu orderCode để check status sau khi thanh toán
-        const urlParams = new URLSearchParams(res.checkoutUrl.split('?')[1]);
-        const orderCode = urlParams.get('orderCode');
+        const urlParams = new URLSearchParams(res.checkoutUrl.split("?")[1]);
+        const orderCode = urlParams.get("orderCode");
         if (orderCode) {
           setLastPaymentOrderCode(orderCode);
         }
@@ -242,7 +362,9 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error("Payment creation error:", error);
-      notify.error("Nạp tiền thất bại: " + (error.message || "Lỗi không xác định"));
+      notify.error(
+        "Nạp tiền thất bại: " + (error.message || "Lỗi không xác định")
+      );
     } finally {
       setLoadingPayment(false);
     }
@@ -257,11 +379,7 @@ const Dashboard = () => {
       notify.error("Thanh toán đã bị hủy.");
       // Xoá params khỏi URL
       params.delete("cancelled");
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname
-      );
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [notify]);
 
@@ -287,7 +405,7 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+              <h1 className="text-3xl font-bold text-gray-800">Setting</h1>
               <p className="text-gray-600">
                 Xin chào, {user?.fullName || user?.username || "Người dùng"}!
               </p>
@@ -311,82 +429,342 @@ const Dashboard = () => {
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
             Thông tin tài khoản
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form
+            onSubmit={handleEditUser}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-500">
-                  Tên đầy đủ
+                  Họ và tên <span className="text-red-500">*</span>
                 </label>
-                <p className="text-gray-900">
-                  {user?.fullName || "Chưa cập nhật"}
-                </p>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded px-3 py-2 w-full"
+                  value={editUser.fullName}
+                  onChange={(e) =>
+                    setEditUser((u) => ({ ...u, fullName: e.target.value }))
+                  }
+                  required
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">
-                  Email
+                  Số điện thoại
                 </label>
-                <p className="text-gray-900">{user?.email || user?.username}</p>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded px-3 py-2 w-full"
+                  value={editUser.phoneNumber}
+                  onChange={(e) =>
+                    setEditUser((u) => ({ ...u, phoneNumber: e.target.value }))
+                  }
+                />
               </div>
             </div>
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-500">
-                  Tên đăng nhập
+                  Avatar URL
                 </label>
-                <p className="text-gray-900">{user?.username}</p>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded px-3 py-2 w-full"
+                  value={editUser.avatarUrl}
+                  onChange={(e) =>
+                    setEditUser((u) => ({ ...u, avatarUrl: e.target.value }))
+                  }
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-500">
-                  Vai trò
+                  Địa chỉ
                 </label>
-                <span className="inline-block px-2 py-1 text-sm font-medium bg-purple-100 text-purple-800 rounded">
-                  {user?.role || "USER"}
-                </span>
+                <input
+                  type="text"
+                  className="border border-gray-300 rounded px-3 py-2 w-full"
+                  value={editUser.address}
+                  onChange={(e) =>
+                    setEditUser((u) => ({ ...u, address: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="pt-10 ml-110">
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className={`px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition ${
+                    editLoading ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {editLoading ? "Đang lưu..." : "Lưu thay đổi"}
+                </button>
+                {editError && (
+                  <div className="text-red-500 text-sm mt-2">{editError}</div>
+                )}
+                {editSuccess && (
+                  <div className="text-green-600 text-sm mt-2">
+                    {editSuccess}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          </form>
         </div>
 
-        {/* Quick Actions */}
+        {/* Danh sách Slide */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Thao tác nhanh
+            Danh sách Slide của bạn
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
-                Khóa học của tôi
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Quản lý các khóa học bạn đã đăng ký
-              </p>
-              <button className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition">
-                Xem khóa học
-              </button>
+          {loadingSlides ? (
+            <div>Đang tải slide...</div>
+          ) : errorSlides ? (
+            <div className="text-red-500">{errorSlides}</div>
+          ) : slides.length === 0 ? (
+            <div>Chưa có slide nào.</div>
+          ) : (
+            <div>
+              <div className="flex items-center mb-2">
+                <button
+                  className="px-2 py-1 mr-2  rounded disabled:opacity-50"
+                  onClick={() => setSlidePage((p) => Math.max(0, p - 1))}
+                  disabled={slidePage === 0}
+                >
+                  ◀
+                </button>
+                <span className="text-sm text-gray-600">
+                  Trang {slidePage + 1} /{" "}
+                  {Math.ceil(slides.length / ITEMS_PER_PAGE)}
+                </span>
+                <button
+                  className="px-2 py-1 ml-2  rounded disabled:opacity-50"
+                  onClick={() =>
+                    setSlidePage((p) =>
+                      Math.min(
+                        Math.ceil(slides.length / ITEMS_PER_PAGE) - 1,
+                        p + 1
+                      )
+                    )
+                  }
+                  disabled={
+                    slidePage >= Math.ceil(slides.length / ITEMS_PER_PAGE) - 1
+                  }
+                >
+                  ▶
+                </button>
+              </div>
+              <div className="flex overflow-x-auto space-x-4 pb-2">
+                {slides
+                  .slice(
+                    slidePage * ITEMS_PER_PAGE,
+                    (slidePage + 1) * ITEMS_PER_PAGE
+                  )
+                  .map((slide, idx) => {
+                    const url = slide.slideUrl || slide.url || slide.link;
+                    return (
+                      <div
+                        key={slide.id || idx}
+                        className="min-w-[220px] max-w-xs bg-gray-50 border rounded p-3 flex-shrink-0 flex flex-col justify-between shadow hover:shadow-md transition"
+                      >
+                        {slide.thumbnailUrl && (
+                          <img
+                            src={slide.thumbnailUrl}
+                            alt={slide.title || "Slide"}
+                            className="w-full h-28 object-cover rounded mb-2"
+                          />
+                        )}
+                        <div className="font-medium truncate mb-1">
+                          {slide.title ||
+                            slide.name ||
+                            `Slide #${slidePage * ITEMS_PER_PAGE + idx + 1}`}
+                        </div>
+                        {slide.description && (
+                          <div className="text-xs text-gray-500 mb-1 line-clamp-2">
+                            {slide.description}
+                          </div>
+                        )}
+                        {slide.createdAt && (
+                          <div className="text-xs text-gray-400 mb-1">
+                            {new Date(slide.createdAt).toLocaleString()}
+                          </div>
+                        )}
+                        <button
+                          className="mt-auto px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+                          onClick={() =>
+                            url && setPreview({ type: "slide", url })
+                          }
+                          disabled={!url}
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Xem chi tiết slide in trực tiếp */}
+              {preview && preview.type === "slide" && (
+                <div className="mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in fade-in-50 duration-500">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-semibold text-purple-700 flex items-center">
+                      Slide bài giảng
+                    </h3>
+                    <button
+                      className="text-gray-500 hover:text-red-500 text-2xl font-bold"
+                      onClick={() => setPreview(null)}
+                      aria-label="Đóng"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-2">
+                    <iframe
+                      src={preview.url}
+                      className="absolute inset-0 w-full h-full"
+                      frameBorder="0"
+                      title="Slide bài giảng"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                  <a
+                    href={preview.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="!no-underline inline-block mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                  >
+                    Mở trong tab mới
+                  </a>
+                </div>
+              )}
             </div>
-            <div className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
-                Tạo bài giảng
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Tạo slide bài giảng với AI
-              </p>
-              <button className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                Tạo mới
-              </button>
+          )}
+        </div>
+
+        {/* Danh sách Video */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Danh sách Video của bạn
+          </h2>
+          {loadingVideos ? (
+            <div>Đang tải video...</div>
+          ) : errorVideos ? (
+            <div className="text-red-500">{errorVideos}</div>
+          ) : videos.length === 0 ? (
+            <div>Chưa có video nào.</div>
+          ) : (
+            <div>
+              <div className="flex items-center mb-2">
+                <button
+                  className="px-2 py-1 mr-2  rounded disabled:opacity-50"
+                  onClick={() => setVideoPage((p) => Math.max(0, p - 1))}
+                  disabled={videoPage === 0}
+                >
+                  ◀
+                </button>
+                <span className="text-sm text-gray-600">
+                  Trang {videoPage + 1} /{" "}
+                  {Math.ceil(videos.length / ITEMS_PER_PAGE)}
+                </span>
+                <button
+                  className="px-2 py-1 ml-2 rounded disabled:opacity-50"
+                  onClick={() =>
+                    setVideoPage((p) =>
+                      Math.min(
+                        Math.ceil(videos.length / ITEMS_PER_PAGE) - 1,
+                        p + 1
+                      )
+                    )
+                  }
+                  disabled={
+                    videoPage >= Math.ceil(videos.length / ITEMS_PER_PAGE) - 1
+                  }
+                >
+                  ▶
+                </button>
+              </div>
+              <div className="flex overflow-x-auto space-x-4 pb-2">
+                {videos
+                  .slice(
+                    videoPage * ITEMS_PER_PAGE,
+                    (videoPage + 1) * ITEMS_PER_PAGE
+                  )
+                  .map((video, idx) => {
+                    const url = video.videoUrl || video.url || video.link;
+                    return (
+                      <div
+                        key={video.id || idx}
+                        className="min-w-[220px] max-w-xs bg-gray-50 border rounded p-3 flex-shrink-0 flex flex-col justify-between shadow hover:shadow-md transition"
+                      >
+                        {video.thumbnailUrl && (
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title || "Video"}
+                            className="w-full h-28 object-cover rounded mb-2"
+                          />
+                        )}
+                        <div className="font-medium truncate mb-1">
+                          {video.title ||
+                            video.name ||
+                            `Video #${videoPage * ITEMS_PER_PAGE + idx + 1}`}
+                        </div>
+                        {video.description && (
+                          <div className="text-xs text-gray-500 mb-1 line-clamp-2">
+                            {video.description}
+                          </div>
+                        )}
+                        {video.createdAt && (
+                          <div className="text-xs text-gray-400 mb-1">
+                            {new Date(video.createdAt).toLocaleString()}
+                          </div>
+                        )}
+                        <button
+                          className="mt-auto px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
+                          onClick={() =>
+                            url && setPreview({ type: "video", url })
+                          }
+                          disabled={!url}
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Xem chi tiết video in trực tiếp */}
+              {preview && preview.type === "video" && (
+                <div className="mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in fade-in-50 duration-500">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-semibold text-purple-700 flex items-center">
+                      Video bài giảng
+                    </h3>
+                    <button
+                      className="text-gray-500 hover:text-red-500 text-2xl font-bold"
+                      onClick={() => setPreview(null)}
+                      aria-label="Đóng"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-2">
+                    <video
+                      src={preview.url}
+                      className="absolute inset-0 w-full h-full"
+                      controls
+                      title="Video bài giảng"
+                    ></video>
+                  </div>
+                  <a
+                    href={preview.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="!no-underline inline-block mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                  >
+                    Mở trong tab mới
+                  </a>
+                </div>
+              )}
             </div>
-            <div className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition">
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
-                Cài đặt
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                Cập nhật thông tin cá nhân
-              </p>
-              <button className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition">
-                Cài đặt
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Nạp tiền */}
@@ -407,9 +785,9 @@ const Dashboard = () => {
               onClick={handleTopUp}
               disabled={loadingPayment}
               className={`px-6 py-2 text-white rounded transition text-lg font-semibold flex items-center gap-2 ${
-                loadingPayment 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700'
+                loadingPayment
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700"
               }`}
             >
               {loadingPayment ? (
@@ -418,7 +796,7 @@ const Dashboard = () => {
                   Đang xử lý...
                 </>
               ) : (
-                'Nạp tiền'
+                "Nạp tiền"
               )}
             </button>
           </div>
@@ -437,73 +815,80 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={triggerExpiredPaymentCheck}
-                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition text-sm font-medium flex items-center gap-2"
-                disabled={loadingPayment}
-              >
-                {loadingPayment ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Đang kiểm tra...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Kiểm tra hết hạn
-                  </>
-                )}
-              </button>
-              <button
-                onClick={fetchPaymentHistory}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm font-medium flex items-center gap-2"
-                disabled={loadingPayment}
-              >
-                {loadingPayment ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Đang tải...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Làm mới
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Nút phân trang */}
+            {paymentHistory.length > PAYMENT_PER_PAGE && (
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-2 py-1 rounded disabled:opacity-50"
+                  onClick={() => setPaymentPage((p) => Math.max(0, p - 1))}
+                  disabled={paymentPage === 0}
+                >
+                  ◀
+                </button>
+                <span className="text-sm text-gray-600">
+                  Trang {paymentPage + 1} /{" "}
+                  {Math.ceil(paymentHistory.length / PAYMENT_PER_PAGE)}
+                </span>
+                <button
+                  className="px-2 py-1  rounded disabled:opacity-50"
+                  onClick={() =>
+                    setPaymentPage((p) =>
+                      Math.min(
+                        Math.ceil(paymentHistory.length / PAYMENT_PER_PAGE) - 1,
+                        p + 1
+                      )
+                    )
+                  }
+                  disabled={
+                    paymentPage >=
+                    Math.ceil(paymentHistory.length / PAYMENT_PER_PAGE) - 1
+                  }
+                >
+                  ▶
+                </button>
+              </div>
+            )}
           </div>
           {loadingPayment ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-              <span className="text-gray-500">Đang tải lịch sử thanh toán...</span>
+              <span className="text-gray-500">
+                Đang tải lịch sử thanh toán...
+              </span>
             </div>
           ) : paymentError ? (
             <div className="text-center py-8">
               <div className="text-red-500 mb-4">
-                <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <svg
+                  className="w-12 h-12 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
                 </svg>
                 Lỗi tải dữ liệu: {paymentError}
               </div>
               <button
                 onClick={fetchPaymentHistory}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm"
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm"
               >
                 Thử lại
               </button>
             </div>
           ) : paymentHistory.length === 0 ? (
             <div className="text-center py-8">
-              <div className="text-gray-500 mb-4">Chưa có giao dịch nạp tiền nào.</div>
+              <div className="text-gray-500 mb-4">
+                Chưa có giao dịch nạp tiền nào.
+              </div>
               <button
                 onClick={fetchPaymentHistory}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-sm"
+                className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition text-sm"
               >
                 Thử tải lại
               </button>
@@ -528,38 +913,43 @@ const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {paymentHistory.map((item, idx) => (
-                    <tr key={item.paymentId || item.id || idx}>
-                      <td className="px-4 py-2 text-sm text-gray-700">
-                        {item.orderCode || item.paymentId || item.id || "-"}
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-700">
-                        {item.amount?.toLocaleString() || "-"}
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-700">
-                        {item.createdAt
-                          ? new Date(item.createdAt).toLocaleString()
-                          : "-"}
-                      </td>
-                      <td className="px-4 py-2 text-sm">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                            item.status === "success" || 
-                            item.status === "SUCCESS" || 
+                  {paymentHistory
+                    .slice(
+                      paymentPage * PAYMENT_PER_PAGE,
+                      (paymentPage + 1) * PAYMENT_PER_PAGE
+                    )
+                    .map((item, idx) => (
+                      <tr key={item.paymentId || item.id || idx}>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {item.orderCode || item.paymentId || item.id || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {item.amount?.toLocaleString() || "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm text-gray-700">
+                          {item.createdAt
+                            ? new Date(item.createdAt).toLocaleString()
+                            : "-"}
+                        </td>
+                        <td className="px-4 py-2 text-sm">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                              item.status === "success" ||
+                              item.status === "SUCCESS" ||
+                              item.status === "PAID"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {item.status === "success" ||
+                            item.status === "SUCCESS" ||
                             item.status === "PAID"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {item.status === "success" || 
-                           item.status === "SUCCESS" || 
-                           item.status === "PAID"
-                            ? "✅ Thành công"
-                            : "🚫 Đã hủy"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                              ? "✅ Thành công"
+                              : "🚫 Đã hủy"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>

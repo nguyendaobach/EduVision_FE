@@ -38,31 +38,11 @@ const Login = () => {
       const fcmToken = await getFcmToken();
       console.log("FCM Token:", fcmToken);
       if (fcmToken) {
-        const fcmResult = await dispatch(authAPI.fcmToken(fcmToken));
-        const fcmData = fcmResult?.payload || fcmResult;
-        if (fcmData && fcmData.code !== 200) {
-          notify.error(
-            "Đăng nhập thành công nhưng gửi FCM token thất bại!",
-            10000
-          );
-        }
+        await dispatch(authAPI.fcmToken(fcmToken));
         localStorage.setItem("fcmToken", fcmToken);
       }
     } catch (error) {
-      let errorMessage = "Đăng nhập thất bại. ";
-      if (error.response?.status === 401) {
-        errorMessage += "Email hoặc mật khẩu không đúng.";
-      } else if (error.response?.status === 404) {
-        errorMessage += "Tài khoản không tồn tại.";
-      } else if (error.response?.status >= 500) {
-        errorMessage += "Lỗi server. Vui lòng thử lại sau.";
-      } else if (error.message?.includes("Network")) {
-        errorMessage += "Không thể kết nối. Kiểm tra mạng của bạn.";
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += "Vui lòng kiểm tra lại thông tin và thử lại.";
-      }
+ 
       notify.error(errorMessage, 10000);
     }
   };
@@ -88,14 +68,7 @@ const Login = () => {
       // Gửi FCM token nếu có
       const fcmToken = await getFcmToken();
       if (fcmToken) {
-        const fcmResult = await dispatch(authAPI.fcmToken(fcmToken));
-        const fcmData = fcmResult?.payload || fcmResult;
-        if (fcmData && fcmData.code !== 200) {
-          notify.error(
-            "Đăng nhập Google thành công nhưng gửi FCM token thất bại!",
-            10000
-          );
-        }
+        await dispatch(authAPI.fcmToken(fcmToken));
         localStorage.setItem("fcmToken", fcmToken);
       }
       // Navigation sẽ được handle bởi useEffect khi isAuthenticated thay đổi

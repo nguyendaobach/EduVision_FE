@@ -49,7 +49,7 @@ const DemoSection = ({
         notify.success("Video mới đã được tạo!");
         if (data.videoUrl) setGeneratedContent({ videoUrl: data.videoUrl }); // Only video
       } else if (data?.type === "slide_and_video_generated") {
-        if (selectedMode === "slide" && data.slideUrl) {
+        if (selectedMode === "slides" && data.slideUrl) {
           setGeneratedContent({ slideUrl: data.slideUrl });
         } else if (selectedMode === "video" && data.videoUrl) {
           setGeneratedContent({ videoUrl: data.videoUrl });
@@ -80,30 +80,23 @@ const DemoSection = ({
     console.log("Payload gửi lên:", payload);
     try {
       let result;
-      if (selectedMode === "slide") {
+      if (selectedMode === "slides") {
         result = await dispatch(generalAPI.createSlides(payload));
       } else {
         result = await dispatch(generalAPI.createVideo(payload));
       }
       const data = result?.payload || result;
       console.log("Kết quả trả về:", data);
-      if (selectedMode === "slide" && data && data.slideUrl) {
+      if (selectedMode === "slides" && data && data.slideUrl) {
         setGeneratedContent({ slideUrl: data.slideUrl });
       } else if (selectedMode === "video" && data && data.videoUrl) {
         setGeneratedContent({ videoUrl: data.videoUrl });
       } else {
         setGeneratedContent(null);
-        notify.error("Không nhận được dữ liệu hợp lệ từ server.");
       }
       setGenerationProgress(100);
     } catch (error) {
       setGeneratedContent(null);
-      const msg =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Lỗi không xác định từ server";
-      notify.error("Tạo nội dung thất bại: " + msg);
       console.error("Lỗi tạo nội dung:", error);
     } finally {
       setIsGenerating(false);
@@ -218,7 +211,7 @@ const DemoSection = ({
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                { value: "slide", label: "Tạo slide" },
+                { value: "slides", label: "Tạo slides" },
                 { value: "video", label: "Tạo video" },
               ].map((mode) => (
                 <div
@@ -301,7 +294,7 @@ const DemoSection = ({
                     <Play className="w-4 h-4 mr-2 text-purple-600" />
                     <span className="font-medium mr-1.5">Loại:</span>
                     <span className="font-semibold text-purple-900">
-                      {selectedMode === "slide" ? "Tạo slide" : "Tạo video"}
+                      {selectedMode === "slides" ? "Tạo slides" : "Tạo video"}
                     </span>
                   </div>
                 )}
@@ -329,8 +322,8 @@ const DemoSection = ({
                 <>
                   <Sparkles className="w-6 h-6 mr-3 group-hover:animate-pulse" />
                   <span className="text-lg">
-                    Tạo {selectedMode === "slide" ? "slide" : "video"} bài giảng
-                    với AI
+                    Tạo {selectedMode === "slides" ? "slides" : "video"} bài
+                    giảng với AI
                   </span>
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                 </>
@@ -338,7 +331,7 @@ const DemoSection = ({
             </button>
             <p className="text-sm text-gray-500 mt-3">
               ⚡ Thời gian tạo:{" "}
-              {selectedMode === "slide" ? "1-3 phút" : "3-5 phút"} (tùy thuộc
+              {selectedMode === "slides" ? "1-3 phút" : "3-5 phút"} (tùy thuộc
               vào độ phức tạp)
             </p>
           </div>
@@ -367,7 +360,7 @@ const DemoSection = ({
                       <Loader className="w-6 h-6 mr-3 animate-spin text-purple-600" />
                       <span className="text-gray-700 font-medium">
                         AI đang tạo{" "}
-                        {selectedMode === "slide" ? "slide" : "video"} chuyên
+                        {selectedMode === "slides" ? "slides" : "video"} chuyên
                         nghiệp cho bạn...
                       </span>
                     </div>
@@ -389,17 +382,17 @@ const DemoSection = ({
                       "Đang tạo outline và cấu trúc bài học..."}
                     {generationProgress >= 40 &&
                       generationProgress < 60 &&
-                      "Đang tạo nội dung slide chi tiết..."}
+                      "Đang tạo nội dung slides chi tiết..."}
                     {generationProgress >= 60 &&
                       generationProgress < 80 &&
                       (selectedMode === "video"
                         ? "Đang tạo script và audio cho video..."
-                        : "Đang tối ưu hóa slide...")}
+                        : "Đang tối ưu hóa slides...")}
                     {generationProgress >= 80 &&
                       generationProgress < 95 &&
                       (selectedMode === "video"
                         ? "Đang render video (có thể mất vài phút)..."
-                        : "Đang hoàn thiện slide...")}
+                        : "Đang hoàn thiện slides...")}
                     {generationProgress >= 95 &&
                       "Đang hoàn tất và kiểm tra chất lượng..."}
                   </div>
@@ -408,7 +401,7 @@ const DemoSection = ({
                       <span className="text-sm text-yellow-800">
                         <strong>Lưu ý:</strong> Quá trình tạo nội dung AI có thể
                         mất{" "}
-                        {selectedMode === "slide" ? " 1-3 phút" : " 3-5 phút"}{" "}
+                        {selectedMode === "slides" ? " 1-3 phút" : " 3-5 phút"}{" "}
                         tùy thuộc vào độ phức tạp. Vui lòng kiên nhẫn chờ đợi.
                       </span>
                     </div>
@@ -419,12 +412,12 @@ const DemoSection = ({
               {!isGenerating &&
                 generatedContent &&
                 generatedContent.slideUrl &&
-                selectedMode === "slide" && (
+                selectedMode === "slides" && (
                   <div className="mb-8 animate-in fade-in-50 duration-700 delay-200">
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="font-medium text-gray-800 flex items-center">
                         <Presentation className="w-4 h-4 mr-2 text-purple-600" />{" "}
-                        Slide bài giảng
+                        Slides bài giảng
                       </h4>
                       <a
                         href={generatedContent.slideUrl}
@@ -440,7 +433,7 @@ const DemoSection = ({
                         src={generatedContent.slideUrl}
                         className="absolute inset-0 w-full h-full"
                         frameBorder="0"
-                        title="Slide bài giảng"
+                        title="Slides bài giảng"
                         allowFullScreen
                       ></iframe>
                     </div>
@@ -479,10 +472,10 @@ const DemoSection = ({
               {/* Nút tải xuống hoặc chia sẻ */}
               {!isGenerating &&
                 generatedContent &&
-                ((generatedContent.slideUrl && selectedMode === "slide") ||
+                ((generatedContent.slideUrl && selectedMode === "slides") ||
                   (generatedContent.videoUrl && selectedMode === "video")) && (
                   <div className="mt-6 flex flex-wrap gap-3 animate-in fade-in-50 duration-700 delay-400">
-                    {generatedContent.slideUrl && selectedMode === "slide" && (
+                    {generatedContent.slideUrl && selectedMode === "slides" && (
                       <a
                         href={generatedContent.slideUrl}
                         download
@@ -503,7 +496,7 @@ const DemoSection = ({
                     <button
                       onClick={() => {
                         const urlToCopy =
-                          (selectedMode === "slide"
+                          (selectedMode === "slides"
                             ? generatedContent.slideUrl
                             : generatedContent.videoUrl) || "";
                         if (urlToCopy) navigator.clipboard.writeText(urlToCopy);
