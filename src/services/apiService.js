@@ -36,7 +36,7 @@ export const authAPI = {
   googleLogin: (idToken) => async (dispatch) => {
     try {
       dispatch(loginStart());
-      const response = await api.post("/authentication/google-session", {
+      const response = await api.post("/authentication/google-sessions", {
         idToken: idToken,
       });
 
@@ -339,7 +339,7 @@ export const generalAPI = {
   getSubjects: () => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.get("/Education/subjects");
+      const response = await api.get("/curriculum/subjects");
       if (response.data.code === 200) {
         dispatch(apiSuccess(response.data.result));
         return response.data.result;
@@ -363,7 +363,7 @@ export const generalAPI = {
     try {
       dispatch(apiStart());
       const response = await api.get(
-        `/Education/chapters?subject=${subject}&grade=${grade}`
+        `/curriculum/chapters?subject=${subject}&grade=${grade}`
       );
       if (response.data.code === 200) {
         dispatch(apiSuccess(response.data.result));
@@ -387,7 +387,7 @@ export const generalAPI = {
   createSlides: (payload) => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.post("/education/slides", payload);
+      const response = await api.post("/slides", payload);
       if (response.data.code === 200) {
         dispatch(apiSuccess(response.data.result));
         return response.data.result;
@@ -406,7 +406,7 @@ export const generalAPI = {
   createVideo: (payload) => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.post("/education/videos", payload);
+      const response = await api.post("/videos", payload);
       if (response.data.code === 200) {
         dispatch(apiSuccess(response.data.result));
         return response.data.result;
@@ -705,12 +705,12 @@ export const generalAPI = {
     }
   },
 
-  // GET /api/notifications?userId={id}
-  getNotifications: (userId) => async (dispatch) => {
+  // GET /api/notifications?page=1&pageSize=10
+  getNotifications: ({ page = 1, pageSize = 10 } = {}) => async (dispatch) => {
     try {
       dispatch(apiStart());
       const response = await api.get("/notifications", {
-        params: { userId },
+        params: { page, pageSize },
       });
       dispatch(apiSuccess(response.data));
       return response.data;
@@ -719,6 +719,22 @@ export const generalAPI = {
         error.response?.data?.message ||
         error.message ||
         "Không thể lấy lịch sử thông báo";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  deleteNotification: (notificationId) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.delete(`/notifications/${notificationId}`);
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể xóa thông báo";
       dispatch(apiFailure(errorMessage));
       throw error;
     }
@@ -759,35 +775,187 @@ export const generalAPI = {
     }
   },
 
-  // GET /api/education/slides
-  getUserSlides: () => async (dispatch) => {
+  // GET /api/slides
+  getUserSlides:
+    ({ page = 1, pageSize = 10, status = "" } = {}) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/slides", {
+          params: { page, pageSize, status },
+        });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy danh sách slide";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+
+  // GET /api/videos
+  getUserVideos:
+    ({ page = 1, pageSize = 10, status = "" } = {}) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/videos", {
+          params: { page, pageSize, status },
+        });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy danh sách video";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+
+  // POST /api/images/image - Upload an image and save metadata
+  uploadImage: (formData) => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.get("/education/slides");
+      // formData là FormData object chứa file và các trường metadata
+      const response = await api.post("/images/images", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       dispatch(apiSuccess(response.data));
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Không thể lấy danh sách slide";
+        "Không thể upload ảnh";
       dispatch(apiFailure(errorMessage));
       throw error;
     }
   },
 
-  // GET /api/education/videos
-  getUserVideos: () => async (dispatch) => {
+  // GET /api/images/image - Get images with filter (category, grade, chapter, pageSize)
+  getImages: ({ category, grade, chapter, pageSize = 20 } = {}) => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.get("/education/videos");
+      const response = await api.get("/images/images", {
+        params: { category, grade, chapter, pageSize },
+      });
       dispatch(apiSuccess(response.data));
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Không thể lấy danh sách video";
+        "Không thể lấy danh sách ảnh";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+};
+
+export const adminAPI = {
+  getUsers:
+    ({ page = 1, pageSize = 10, search = "", role = "" } = {}) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/admin/users", {
+          params: { page, pageSize, search, role },
+        });
+        console.log("Fetched users:", response.data);
+        dispatch(apiSuccess(response.data));
+        return response.data.result; // Trả về result thay vì toàn bộ data
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy danh sách người dùng";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+
+  UpdateUser: (userId, payload) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.put(`/admin/users/${userId}`, payload);
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể cập nhật người dùng";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  DeleteUser: (userId) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.delete(`/admin/users/${userId}`);
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể xóa người dùng";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  ReactivateUser: (userId) => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.post(`/admin/users/${userId}/reactivate`);
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể kích hoạt lại người dùng";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  DashboardUser: () => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/admin/dashboard/users");
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể lấy được thông tin";
+      dispatch(apiFailure(errorMessage));
+      throw error;
+    }
+  },
+
+  DashboardContent: () => async (dispatch) => {
+    try {
+      dispatch(apiStart());
+      const response = await api.get("/admin/dashboard/content-generation");
+      dispatch(apiSuccess(response.data));
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Không thể lấy được thông tin";
       dispatch(apiFailure(errorMessage));
       throw error;
     }

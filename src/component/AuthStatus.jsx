@@ -2,7 +2,7 @@ import { useAuth, useAppDispatch } from "../hooks/redux";
 import { authAPI } from "../services/apiService";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { FaBell, FaRegBell } from "react-icons/fa";
 import { generalAPI } from "../services/apiService";
 
 const AuthStatus = () => {
@@ -15,12 +15,12 @@ const AuthStatus = () => {
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Fetch notifications
-  const fetchNotifications = async (userId) => {
+  const fetchNotifications = async (page = 1, pageSize = 10) => {
     setLoadingNotifications(true);
     try {
-      const res = await dispatch(generalAPI.getNotifications(userId));
+      const res = await dispatch(generalAPI.getNotifications({ page, pageSize }));
       let arr = [];
-      if (Array.isArray(res?.result)) arr = res.result;
+      if (Array.isArray(res?.result?.data)) arr = res.result.data;
       else if (Array.isArray(res?.data)) arr = res.data;
       else if (Array.isArray(res)) arr = res;
       setNotifications(arr);
@@ -65,29 +65,72 @@ const AuthStatus = () => {
             className="relative p-2 rounded-full hover:bg-gray-100 focus:outline-none"
             onClick={async () => {
               setShowNotifications((s) => !s);
-              if (!showNotifications && user?.userId) {
-                await fetchNotifications(user.userId);
+              if (!showNotifications) {
+                await fetchNotifications(1, 10);
               }
             }}
           >
-            <Bell className="w-6 h-6 text-gray-700" />
+            <FaBell className="w-6 h-6 text-yellow-700" />
+            {/* Badge số lượng thông báo chưa đọc */}
+            {notifications.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center border border-white shadow">
+                {notifications.length > 99 ? "99+" : notifications.length}
+              </span>
+            )}
           </button>
           {showNotifications && (
             <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-in fade-in-50 duration-200">
-              <div className="p-4 border-b font-semibold text-gray-700">Thông báo</div>
+              <div className="p-4 border-b font-semibold text-gray-700 flex items-center justify-between">
+                <span>Thông báo</span>
+                {/* Đã bỏ nút Đánh dấu đã đọc */}
+              </div>
               <div className="max-h-72 overflow-y-auto">
                 {loadingNotifications ? (
-                  <div className="p-4 text-gray-500 text-center">Đang tải...</div>
+                  <div className="p-4 text-gray-500 text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500 mx-auto mb-2"></div>
+                    Đang tải...
+                  </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-4 text-gray-500 text-center">Không có thông báo nào.</div>
+                  <div className="p-4 text-gray-500 text-center flex flex-col items-center gap-2">
+                    <FaRegBell className="w-8 h-8 mb-1 text-gray-300" />
+                    Không có thông báo nào.
+                  </div>
                 ) : (
                   notifications.map((n, idx) => (
-                    <div key={n.notificationId || idx} className="p-4 border-b last:border-b-0 text-gray-800 text-sm">
-                      {n.message}
+                    <div
+                      key={n.notificationId || idx}
+                      className="p-4 border-b last:border-b-0 text-gray-800 text-sm flex items-start gap-2 hover:bg-gray-50 transition relative"
+                    >
+                      <span className="mt-1 text-yellow-500">
+                        <FaBell />
+                      </span>
+                      <div className="flex-1">
+                        <div>{n.message}</div>
+                        {n.createdAt && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {new Date(n.createdAt).toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        className="ml-2 text-red-500 hover:text-red-700 text-lg font-bold px-2 py-1 rounded focus:outline-none"
+                        title="Xóa thông báo"
+                        onClick={async () => {
+                          try {
+                            await dispatch(generalAPI.deleteNotification(n.notificationId));
+                            setNotifications((prev) => prev.filter((item) => item.notificationId !== n.notificationId));
+                          } catch (e) {
+                            // Optionally: show error notification
+                          }
+                        }}
+                      >
+                        ×
+                      </button>
                     </div>
                   ))
                 )}
               </div>
+              {/* Đã bỏ nút Xem tất cả */}
             </div>
           )}
         </div>

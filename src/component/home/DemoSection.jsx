@@ -17,6 +17,7 @@ import { generalAPI } from "../../services/apiService";
 import { useEffect } from "react";
 import { listenFcmMessage } from "../../utils/firebase";
 import { useNotify } from "../../hooks/redux";
+import { FaShapes } from "react-icons/fa";
 
 const DemoSection = ({
   selectedSubject,
@@ -37,6 +38,7 @@ const DemoSection = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [template, setTemplate] = useState(1);
   const notify = useNotify();
 
   useEffect(() => {
@@ -74,7 +76,7 @@ const DemoSection = ({
       chapter: selectedChapter,
       grade: Number(selectedGrade),
       imageCategory: selectedSubject,
-      template: 1,
+      template: template,
       mode: selectedMode,
     };
     console.log("Payload gửi lên:", payload);
@@ -202,6 +204,24 @@ const DemoSection = ({
                   <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
                 )}
               </div>
+            </div>
+          </div>
+          {/* Chọn template */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <FaShapes className="w-4 h-4 inline mr-1" /> Chọn template
+            </label>
+            <div className="relative">
+              <select
+                value={template}
+                onChange={e => setTemplate(Number(e.target.value))}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
+              >
+                {[1,2,3,4].map((tpl) => (
+                  <option key={tpl} value={tpl}>Template {tpl}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
             </div>
           </div>
           {/* Chọn chế độ */}

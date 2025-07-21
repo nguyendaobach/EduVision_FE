@@ -14,6 +14,9 @@ import InitiateRegister from "../pages/InitiateRegister";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
 import PaymentSuccess from "../pages/PaymentSuccess";
+import ManageUser from "../pages/admin/ManageUser";
+import ManagePayment from "../pages/admin/ManagePayment";
+import DashboardAdmin from "../pages/admin/Dashboard";
 
 const router = createBrowserRouter([
   {
@@ -79,6 +82,14 @@ const router = createBrowserRouter([
             <PaymentSuccess />
           </PrivateRoute>
         ),
+      },
+      {
+        path: "/manage-user",
+        element: <ManageUser />,
+      },
+      {
+        path: "/dashboard-admin",
+        element: <DashboardAdmin />,
       },
     ],
   },
