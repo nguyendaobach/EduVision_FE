@@ -106,7 +106,7 @@ const DemoSection = ({
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section className="py-12 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-4xl font-bold text-gray-900 mb-6">
           Tạo bài giảng trong{" "}
@@ -214,11 +214,13 @@ const DemoSection = ({
             <div className="relative">
               <select
                 value={template}
-                onChange={e => setTemplate(Number(e.target.value))}
+                onChange={(e) => setTemplate(Number(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
               >
-                {[1,2,3,4].map((tpl) => (
-                  <option key={tpl} value={tpl}>Template {tpl}</option>
+                {[1, 2, 3, 4].map((tpl) => (
+                  <option key={tpl} value={tpl}>
+                    Template {tpl}
+                  </option>
                 ))}
               </select>
               <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
