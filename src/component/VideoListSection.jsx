@@ -54,76 +54,58 @@ const VideoListSection = ({
                 return (
                   <div
                     key={video.id || idx}
-                    className="min-w-[220px] max-w-xs bg-gray-50 border rounded p-3 flex-shrink-0 flex flex-col justify-between shadow hover:shadow-md transition"
+                    className="min-w-[300px] max-w-sm bg-white border rounded-lg p-4 flex-shrink-0 shadow-md hover:shadow-lg transition-shadow duration-200"
                   >
-                    {video.thumbnailUrl && (
-                      <img
-                        src={video.thumbnailUrl}
-                        alt={video.title || "Video"}
-                        className="w-full h-28 object-cover rounded mb-2"
-                      />
+                    {/* Video Preview */}
+                    {url && (
+                      <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 mb-3">
+                        <video
+                          src={url}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          controls
+                          title={video.title || `Video #${(videoPage - 1) * ITEMS_PER_PAGE + idx + 1}`}
+                          preload="metadata"
+                        ></video>
+                      </div>
                     )}
-                    <div className="font-medium truncate mb-1">
-                      {video.title ||
-                        video.name ||
-                        `Video #${(videoPage - 1) * ITEMS_PER_PAGE + idx + 1}`}
+                    
+                    {/* Video Info */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-gray-800 truncate">
+                        {video.title ||
+                          video.name ||
+                          `Video #${(videoPage - 1) * ITEMS_PER_PAGE + idx + 1}`}
+                      </div>
+                      {video.description && (
+                        <div className="text-sm text-gray-600 line-clamp-2">
+                          {video.description}
+                        </div>
+                      )}
+                      {video.createdAt && (
+                        <div className="text-xs text-gray-400">
+                          📅 {new Date(video.createdAt).toLocaleDateString('vi-VN')}
+                        </div>
+                      )}
+                      
+                      {/* Action Button */}
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors duration-200 no-underline"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Mở toàn màn hình
+                        </a>
+                      )}
                     </div>
-                    {video.description && (
-                      <div className="text-xs text-gray-500 mb-1 line-clamp-2">
-                        {video.description}
-                      </div>
-                    )}
-                    {video.createdAt && (
-                      <div className="text-xs text-gray-400 mb-1">
-                        {new Date(video.createdAt).toLocaleString()}
-                      </div>
-                    )}
-                    <button
-                      className="mt-auto px-3 py-1 bg-purple-500 text-white rounded text-xs hover:bg-purple-600"
-                      onClick={() =>
-                        url && setPreview({ type: "video", url })
-                      }
-                      disabled={!url}
-                    >
-                      Xem chi tiết
-                    </button>
                   </div>
                 );
               })}
           </div>
-          {/* Xem chi tiết video in trực tiếp */}
-          {preview && preview.type === "video" && (
-            <div className="mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in fade-in-50 duration-500">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-purple-700 flex items-center">
-                  Video bài giảng
-                </h3>
-                <button
-                  className="text-gray-500 hover:text-red-500 text-2xl font-bold"
-                  onClick={() => setPreview(null)}
-                  aria-label="Đóng"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 mb-2">
-                <video
-                  src={preview.url}
-                  className="absolute inset-0 w-full h-full"
-                  controls
-                  title="Video bài giảng"
-                ></video>
-              </div>
-              <a
-                href={preview.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="!no-underline inline-block mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-              >
-                Mở trong tab mới
-              </a>
-            </div>
-          )}
         </div>
       )}
     </div>

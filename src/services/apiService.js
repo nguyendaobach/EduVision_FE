@@ -6,6 +6,7 @@ import {
   logout as logoutAction,
 } from "../store/slices/authSlice";
 import { apiStart, apiSuccess, apiFailure } from "../store/slices/apiSlice";
+import { getQuotaStart, getQuotaSuccess, getQuotaFailure } from "../store/slices/quotaSlice";
 
 // Auth API calls
 export const authAPI = {
@@ -863,16 +864,16 @@ export const generalAPI = {
     },
   getQuotas: () => async (dispatch) => {
     try {
-      dispatch(apiStart());
+      dispatch(getQuotaStart());
       const response = await api.get("/quotas/summary");
-      dispatch(apiSuccess(response.data));
+      dispatch(getQuotaSuccess(response.data));
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Không thể lấy Quotas";
-      dispatch(apiFailure(errorMessage));
+      dispatch(getQuotaFailure(errorMessage));
       throw error;
     }
   },
