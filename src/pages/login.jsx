@@ -28,13 +28,11 @@ const Login = () => {
     e.preventDefault();
     try {
       const loginResult = await dispatch(authAPI.login({ email, password }));
-      // Kiểm tra kết quả trả về từ Redux thunk
       const loginData = loginResult?.payload || loginResult;
       console.log("Login Result:", loginData);
       if (loginData !== null || loginData.code === 200) {
         notify.success("Đăng nhập thành công!");
       }
-      // Gửi FCM token nếu có
       const fcmToken = await getFcmToken();
       console.log("FCM Token:", fcmToken);
       if (fcmToken) {
@@ -42,8 +40,7 @@ const Login = () => {
         localStorage.setItem("fcmToken", fcmToken);
       }
     } catch (error) {
- 
-      notify.error(errorMessage, 10000);
+      /// Handle specific error cases
     }
   };
 
@@ -54,10 +51,7 @@ const Login = () => {
         googleResponse?.credential ||
         googleResponse?.tokenId ||
         googleResponse?.idToken;
-      if (!idToken) {
-        notify.error("Không lấy được Google ID Token.");
-        return;
-      }
+
       console.log("Google ID Token:", idToken);
       // Gọi API đăng nhập Google
       const loginResult = await dispatch(authAPI.googleLogin(idToken));
