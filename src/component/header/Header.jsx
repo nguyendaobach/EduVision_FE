@@ -1,47 +1,39 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import AuthStatus from "../AuthStatus";
-import { useAppDispatch } from "../../hooks/redux";
-import { generalAPI } from "../../services/apiService";
 import { useSelector } from "react-redux";
 
 const Header = () => {
-  const dispatch = useAppDispatch();
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const user = useSelector((state) => state.auth.user);
+
   const [navItems, setNavItems] = useState([
     { label: "Trang chủ", link: "/" },
     { label: "Giá cả", link: "/price" },
   ]);
 
-  const user = useSelector(state => state.auth.user);
-  const token = useSelector(state => state.auth.token);
-
   useEffect(() => {
-    const fetchUser = async () => {
-      if (!token) return;
-      try {
-        const userData = await dispatch(generalAPI.getCurrentUser());
-        const role = userData?.result?.role;
-        if (role === "ADMIN") {
-          setNavItems([
-            { label: "Trang chủ", link: "/" },
-            { label: "Dashboard", link: "/dashboard-admin" },
-            { label: "Quản lý người dùng", link: "/manage-user" },
-          ]);
-        } else {
-          setNavItems([
-            { label: "Trang chủ", link: "/" },
-            { label: "Giá cả", link: "/price" },
-          ]);
-        }
-      } catch (e) {
-        setNavItems([
-          { label: "Trang chủ", link: "/" },
-          { label: "Giá cả", link: "/price" },
-        ]);
-      }
-    };
-    fetchUser();
-  }, [token, dispatch]);
+    if (!isAuthenticated || !user) {
+      setNavItems([
+        { label: "Trang chủ", link: "/" },
+        { label: "Giá cả", link: "/price" },
+      ]);
+      return;
+    }
+
+    if (user.role === "ADMIN") {
+      setNavItems([
+        { label: "Trang chủ", link: "/" },
+        { label: "Dashboard", link: "/dashboard-admin" },
+        { label: "Quản lý người dùng", link: "/manage-user" },
+      ]);
+    } else {
+      setNavItems([
+        { label: "Trang chủ", link: "/" },
+        { label: "Giá cả", link: "/price" },
+      ]);
+    }
+  }, [isAuthenticated, user?.role]);
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-[60] shadow-sm">
@@ -63,25 +55,24 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Navigation Menu */}
+          {/* Navigation */}
           <nav className="hidden md:flex items-center gap-x-8">
             {navItems.map((item, index) => (
               <Link
                 key={index}
                 to={item.link}
-                className="!no-underline text-[17px] font-medium text-purple-700 hover:text-purple-700 transition-colors duration-200"
+                className="!no-underline text-[17px] font-medium transition-colors duration-200"
               >
-                <div className="text-purple-700 hover:text-purple-700">
+                <div className=" text-purple-700 hover:text-purple-700">
                   {item.label}
                 </div>
               </Link>
             ))}
           </nav>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex items-center gap-x-4">
             <AuthStatus />
-            {/* Mobile menu button */}
             <button className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
               <svg
                 className="w-6 h-6"
