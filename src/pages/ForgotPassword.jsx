@@ -16,9 +16,7 @@ const ForgotPassword = () => {
     setApiError("");
     try {
       await dispatch(authAPI.forgotPassword(email));
-      notify.success(
-        "Nếu email tồn tại, hướng dẫn đặt lại mật khẩu đã được gửi!"
-      );
+      notify.success("OTP đã được gửi!");
       navigate("/reset-password", { state: { email } });
     } catch (error) {
       let errorMessage = "Không thể gửi yêu cầu. ";

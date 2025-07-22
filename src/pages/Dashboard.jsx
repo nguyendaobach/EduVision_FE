@@ -219,7 +219,12 @@ const Dashboard = () => {
       setLoadingSlides(true);
       setErrorSlides(null);
       try {
-        const res = await dispatch(generalAPI.getUserSlides({ page: slidePage, pageSize: ITEMS_PER_PAGE }));
+        const res = await dispatch(
+          generalAPI.getUserSlides({
+            page: slidePage,
+            pageSize: ITEMS_PER_PAGE,
+          })
+        );
         let arr = [];
         let total = 0;
         if (res?.result) {
@@ -240,7 +245,12 @@ const Dashboard = () => {
       setLoadingVideos(true);
       setErrorVideos(null);
       try {
-        const res = await dispatch(generalAPI.getUserVideos({ page: videoPage, pageSize: ITEMS_PER_PAGE }));
+        const res = await dispatch(
+          generalAPI.getUserVideos({
+            page: videoPage,
+            pageSize: ITEMS_PER_PAGE,
+          })
+        );
         let arr = [];
         let total = 0;
         if (res?.result) {
@@ -267,6 +277,7 @@ const Dashboard = () => {
       try {
         const res = await dispatch(generalAPI.getCurrentUser());
         setCurrentUser(res.data);
+        let data = res?.result || res?.data || res;
         setEditUser({
           fullName: data?.fullName || "",
           phoneNumber: data?.phoneNumber || "",
@@ -540,7 +551,7 @@ const Dashboard = () => {
         {currentUser?.role !== "user" && <ImageManager />}
 
         {/* Nạp tiền & Lịch sử nạp tiền */}
-        {currentUser?.role === "admin" && (
+        {currentUser?.role !== "admin" && (
           <TopUpAndHistory
             user={user}
             notify={notify}

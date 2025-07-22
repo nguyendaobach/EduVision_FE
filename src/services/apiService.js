@@ -706,23 +706,25 @@ export const generalAPI = {
   },
 
   // GET /api/notifications?page=1&pageSize=10
-  getNotifications: ({ page = 1, pageSize = 10 } = {}) => async (dispatch) => {
-    try {
-      dispatch(apiStart());
-      const response = await api.get("/notifications", {
-        params: { page, pageSize },
-      });
-      dispatch(apiSuccess(response.data));
-      return response.data;
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Không thể lấy lịch sử thông báo";
-      dispatch(apiFailure(errorMessage));
-      throw error;
-    }
-  },
+  getNotifications:
+    ({ page = 1, pageSize = 10 } = {}) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/notifications", {
+          params: { page, pageSize },
+        });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy lịch sử thông báo";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
 
   deleteNotification: (notificationId) => async (dispatch) => {
     try {
@@ -824,7 +826,7 @@ export const generalAPI = {
       // formData là FormData object chứa file và các trường metadata
       const response = await api.post("/images/images", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       dispatch(apiSuccess(response.data));
@@ -840,19 +842,36 @@ export const generalAPI = {
   },
 
   // GET /api/images/image - Get images with filter (category, grade, chapter, pageSize)
-  getImages: ({ category, grade, chapter, pageSize = 20 } = {}) => async (dispatch) => {
+  getImages:
+    ({ category, grade, chapter, pageSize = 20 } = {}) =>
+    async (dispatch) => {
+      try {
+        dispatch(apiStart());
+        const response = await api.get("/images/images", {
+          params: { category, grade, chapter, pageSize },
+        });
+        dispatch(apiSuccess(response.data));
+        return response.data;
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.message ||
+          error.message ||
+          "Không thể lấy danh sách ảnh";
+        dispatch(apiFailure(errorMessage));
+        throw error;
+      }
+    },
+  getQuotas: () => async (dispatch) => {
     try {
       dispatch(apiStart());
-      const response = await api.get("/images/images", {
-        params: { category, grade, chapter, pageSize },
-      });
+      const response = await api.get("/quotas/summary");
       dispatch(apiSuccess(response.data));
       return response.data;
     } catch (error) {
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
-        "Không thể lấy danh sách ảnh";
+        "Không thể lấy Quotas";
       dispatch(apiFailure(errorMessage));
       throw error;
     }
