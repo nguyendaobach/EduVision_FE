@@ -187,10 +187,10 @@ const DemoSection = ({
                     {isLoading
                       ? "Đang tải bài học..."
                       : !selectedSubject || !selectedGrade
-                      ? "Vui lòng chọn môn học và lớp trước"
-                      : chapters.length === 0
-                      ? "Không có bài học"
-                      : "Chọn bài học"}
+                        ? "Vui lòng chọn môn học và lớp trước"
+                        : chapters.length === 0
+                          ? "Không có bài học"
+                          : "Chọn bài học"}
                   </option>
                   {chapters.map((chapter) => (
                     <option key={chapter} value={chapter}>
@@ -239,20 +239,18 @@ const DemoSection = ({
                 <div
                   key={mode.value}
                   onClick={() => setSelectedMode(mode.value)}
-                  className={`border rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 transform ${
-                    selectedMode === mode.value
-                      ? "border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-md"
-                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-sm"
-                  }`}
+                  className={`border rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 transform ${selectedMode === mode.value
+                    ? "border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-md"
+                    : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-sm"
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div
-                        className={`w-5 h-5 mr-3 rounded-full border-2 flex items-center justify-center ${
-                          selectedMode === mode.value
-                            ? "border-purple-500"
-                            : "border-gray-300"
-                        }`}
+                        className={`w-5 h-5 mr-3 rounded-full border-2 flex items-center justify-center ${selectedMode === mode.value
+                          ? "border-purple-500"
+                          : "border-gray-300"
+                          }`}
                       >
                         {selectedMode === mode.value && (
                           <div className="w-3 h-3 rounded-full bg-purple-500"></div>
@@ -359,7 +357,14 @@ const DemoSection = ({
           </div>
           {/* Hiển thị tiến trình và kết quả */}
           {(generatedContent || isGenerating) && (
-            <div className="mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in slide-in-from-bottom-4 duration-500">
+            <div className="relative mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in slide-in-from-bottom-4 duration-500">
+              {/* Overlay loading khi đang tạo */}
+              {isGenerating && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 z-20 rounded-lg">
+                  <Loader className="w-12 h-12 text-purple-600 animate-spin mb-2" />
+                  <span className="text-lg font-semibold text-purple-700">Đang tạo nội dung...</span>
+                </div>
+              )}
               <h3 className="text-xl font-medium text-purple-800 mb-6 flex items-center">
                 {isGenerating ? (
                   <>
