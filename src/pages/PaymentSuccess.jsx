@@ -151,7 +151,14 @@ const PaymentSuccess = () => {
   const handleBackToDashboard = () => {
     // Đảm bảo Dashboard sẽ refresh khi user quay lại
     localStorage.setItem("refreshDashboard", "true");
-    navigate("/dashboard");
+    
+    // Kiểm tra nếu đang chạy trên production (vercel) thì redirect về vercel dashboard
+    // Nếu local thì dùng navigate như cũ
+    if (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('edu-vision-fe.vercel.app')) {
+      window.location.href = "https://edu-vision-fe.vercel.app/dashboard";
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   if (loading) {
