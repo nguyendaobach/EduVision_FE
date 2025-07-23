@@ -3,7 +3,7 @@ import { store } from "../store/store";
 import { logout } from "../store/slices/authSlice";
 
 // Create axios instance
-const api = axios.create({ baseURL: "https://localhost:7258/api" });
+const api = axios.create({ baseURL: "https://eduvision-bsg0f8eqhnbwavbv.southeastasia-01.azurewebsites.net/api" });
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

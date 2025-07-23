@@ -46,40 +46,62 @@ const Login = () => {
 
   const handleGoogleSuccess = async (googleResponse) => {
     try {
-      // Lấy idToken từ Google response
-      const idToken =
-        googleResponse?.credential ||
-        googleResponse?.tokenId ||
-        googleResponse?.idToken;
+      console.log("Full Google Response:", googleResponse); // Debug log
 
-      console.log("Google ID Token:", idToken);
+      // Lấy idToken từ Google response - sửa lại logic này
+      let idToken = null;
+
+      // Kiểm tra các possible locations của token
+      if (googleResponse?.credential) {
+        idToken = googleResponse.credential; // Google Identity Services format
+      } else if (googleResponse?.tokenId) {
+        idToken = googleResponse.tokenId; // Legacy format
+      } else if (googleResponse?.id_token) {
+        idToken = googleResponse.id_token; // Alternative format
+      } else if (googleResponse?.access_token) {
+        idToken = googleResponse.access_token; // OAuth2 format
+      }
+
+      console.log("Extracted ID Token:", idToken);
+
+      // Validate token trước khi gửi
+      if (!idToken) {
+        throw new Error(
+          "Không thể lấy token từ Google. Response: " +
+            JSON.stringify(googleResponse)
+        );
+      }
+
+      // Decode token để debug (optional)
+      try {
+        const tokenParts = idToken.split(".");
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log("Token payload:", payload);
+        }
+      } catch (decodeError) {
+        console.warn("Cannot decode token:", decodeError);
+      }
+
       // Gọi API đăng nhập Google
       const loginResult = await dispatch(authAPI.googleLogin(idToken));
+      console.log("Google Login Result:", loginResult);
+
       const loginData = loginResult?.payload || loginResult;
-      if (loginData !== null || loginData.code === 200) {
+      if (loginData && (loginData.code === 200 || loginData.success)) {
         notify.success("Đăng nhập Google thành công!");
-      }
-      // Gửi FCM token nếu có
-      const fcmToken = await getFcmToken();
-      if (fcmToken) {
-        await dispatch(authAPI.fcmToken(fcmToken));
-        localStorage.setItem("fcmToken", fcmToken);
-      }
-      // Navigation sẽ được handle bởi useEffect khi isAuthenticated thay đổi
-    } catch (error) {
-      let errorMessage = "Đăng nhập Google thất bại. ";
-      if (error.response?.status === 401) {
-        errorMessage += "Tài khoản Google không hợp lệ.";
-      } else if (error.response?.status >= 500) {
-        errorMessage += "Lỗi server. Vui lòng thử lại sau.";
-      } else if (error.message?.includes("Network")) {
-        errorMessage += "Không thể kết nối. Kiểm tra mạng của bạn.";
-      } else if (error.message) {
-        errorMessage += error.message;
+
+        // Gửi FCM token nếu có
+        const fcmToken = await getFcmToken();
+        if (fcmToken) {
+          await dispatch(authAPI.fcmToken(fcmToken));
+          localStorage.setItem("fcmToken", fcmToken);
+        }
       } else {
-        errorMessage += "Vui lòng thử lại.";
+        throw new Error("Login response không hợp lệ");
       }
-      notify.error(errorMessage, 10000);
+    } catch (error) {
+      return;
     }
   };
 
