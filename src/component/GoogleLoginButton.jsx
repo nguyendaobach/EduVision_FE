@@ -1,76 +1,63 @@
-import { useEffect, useRef } from 'react';
-import { useAppDispatch, useNotify } from '../hooks/redux';
-import { authAPI } from '../services/apiService';
+import { GoogleLogin } from "@react-oauth/google";
+import { useEffect, useState } from "react";
 
-const GoogleLoginButton = ({ onSuccess, disabled = false }) => {
-  const googleButtonRef = useRef(null);
-  const dispatch = useAppDispatch();
-  const notify = useNotify();
+const GoogleLoginButton = ({ onSuccess, onError, disabled, className }) => {
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const initializeGoogleSignIn = () => {
-      if (window.google && googleButtonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-        });
-
-        window.google.accounts.id.renderButton(googleButtonRef.current, {
-          theme: 'outline',
-          size: 'large',
-          type: 'standard',
-          shape: 'rectangular',
-          text: 'signin_with',
-          logo_alignment: 'left',
-          width: '100%',
-        });
+    // Check if Google script is loaded
+    const checkGoogleReady = () => {
+      if (window.google && window.google.accounts) {
+        setIsReady(true);
+      } else {
+        setTimeout(checkGoogleReady, 100);
       }
     };
+    checkGoogleReady();
+  }, []);
 
-    const handleCredentialResponse = async (response) => {
-      try {
-        const idToken = response.credential;
-        console.log('Google ID Token:', idToken);
+  const handleSuccess = (credentialResponse) => {
+    console.log("GoogleLoginButton - Raw response:", credentialResponse);
 
-        // Gửi idToken đến backend
-        const result = await dispatch(authAPI.googleLogin(idToken));
-        
-        if (result) {
-          notify.success('Đăng nhập Google thành công!');
-          if (onSuccess) {
-            onSuccess(result);
-          }
-        }
-      } catch (error) {
-        console.error('Google login error:', error);
-        notify.error('Đăng nhập Google thất bại');
-      }
-    };
-
-    // Đợi Google script load xong
-    if (window.google) {
-      initializeGoogleSignIn();
-    } else {
-      const checkGoogleLoaded = setInterval(() => {
-        if (window.google) {
-          clearInterval(checkGoogleLoaded);
-          initializeGoogleSignIn();
-        }
-      }, 100);
-
-      return () => clearInterval(checkGoogleLoaded);
+    // Validate response structure
+    if (!credentialResponse) {
+      console.error("Empty credential response");
+      onError?.({ message: "Empty response from Google" });
+      return;
     }
-  }, [dispatch, notify, onSuccess]);
+
+    // Pass the full response to parent
+    onSuccess(credentialResponse);
+  };
+
+  const handleError = (error) => {
+    console.error("GoogleLoginButton - Error:", error);
+    onError?.(error || { message: "Google login failed" });
+  };
+
+  if (!isReady) {
+    return (
+      <div className="w-full py-3 text-center text-gray-500 border border-gray-300 rounded">
+        Đang tải Google Login...
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full">
-      <div 
-        ref={googleButtonRef} 
-        className={`w-full ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
-      ></div>
-    </div>
+    <GoogleLogin
+      onSuccess={handleSuccess}
+      onError={handleError}
+      disabled={disabled}
+      useOneTap={false}
+      auto_select={false}
+      cancel_on_tap_outside={true}
+      theme="outline"
+      size="large"
+      width="100%"
+      text="signin_with"
+      shape="rectangular"
+      logo_alignment="left"
+    />
   );
 };
 
