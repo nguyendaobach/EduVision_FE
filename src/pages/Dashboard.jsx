@@ -7,11 +7,13 @@ import VideoListSection from "../component/VideoListSection";
 import ImageManager from "../component/ImageManager";
 import QuotaDisplay from "../component/QuotaDisplay";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
   const notify = useNotify();
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
   const [amount, setAmount] = useState(10000);
   const [paymentHistory, setPaymentHistory] = useState([]);
   const [loadingPayment, setLoadingPayment] = useState(false);
@@ -392,6 +394,21 @@ const Dashboard = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [notify]);
+
+  useEffect(() => {
+    // Kiểm tra nếu user từ payment success
+    if (location.state?.fromPayment) {
+      console.log("User came from payment success");
+      // Refresh data hoặc hiển thị thông báo
+    }
+
+    // Kiểm tra localStorage flag
+    if (localStorage.getItem("refreshDashboard") === "true") {
+      localStorage.removeItem("refreshDashboard");
+      console.log("Refreshing dashboard data");
+      // Refresh data
+    }
+  }, [location]);
 
   if (!isAuthenticated) {
     return (
