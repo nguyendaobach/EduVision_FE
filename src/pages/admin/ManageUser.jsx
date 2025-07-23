@@ -24,13 +24,19 @@ const columns = (onUpdate, onReactivate) => [
         <span className="text-xs bg-blue-100 px-2 py-1 rounded-full mr-2">
           ID
         </span>
-        Mã người dùng
+        ID
       </div>
     ),
     dataIndex: "userId",
     key: "userId",
     align: "center",
     width: 120,
+    // Thêm sort cho ID (số)
+    sorter: (a, b) => a.userId - b.userId,
+    sortDirections: ["ascend", "descend"],
+    showSorterTooltip: {
+      title: "Sắp xếp theo ID: Thấp đến cao / Cao đến thấp",
+    },
     render: (text) => (
       <div className="font-mono text-sm bg-gray-50 px-2 py-1 rounded-lg">
         #{text}
@@ -48,6 +54,16 @@ const columns = (onUpdate, onReactivate) => [
     key: "fullName",
     align: "center",
     width: 200,
+    // Thêm sort cho Họ tên (chữ cái A-Z, Z-A)
+    sorter: (a, b) => {
+      const nameA = (a.fullName || "").toLowerCase();
+      const nameB = (b.fullName || "").toLowerCase();
+      return nameA.localeCompare(nameB, "vi", { numeric: true });
+    },
+    sortDirections: ["ascend", "descend"],
+    showSorterTooltip: {
+      title: "Sắp xếp theo tên: A-Z / Z-A",
+    },
     render: (text) => (
       <div className="flex items-center justify-center">
         <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
@@ -69,6 +85,16 @@ const columns = (onUpdate, onReactivate) => [
     key: "email",
     align: "center",
     width: 250,
+    // Thêm sort cho Email (chữ cái A-Z, Z-A)
+    sorter: (a, b) => {
+      const emailA = (a.email || "").toLowerCase();
+      const emailB = (b.email || "").toLowerCase();
+      return emailA.localeCompare(emailB, "vi", { numeric: true });
+    },
+    sortDirections: ["ascend", "descend"],
+    showSorterTooltip: {
+      title: "Sắp xếp theo email: A-Z / Z-A",
+    },
     render: (text) => (
       <div className="font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
         {text}
@@ -401,7 +427,29 @@ const ManageUser = () => {
               </div>
             </div>
           </div>
+
+          {/* Sort Instructions */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
+            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+              📋 Hướng dẫn sắp xếp:
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-blue-700">
+              <div className="flex items-center">
+                <span className="font-medium mr-1">ID:</span>
+                <span>Click để sắp xếp từ thấp đến cao / cao đến thấp</span>
+              </div>
+              <div className="flex items-center">
+                <span className="font-medium mr-1">Họ tên:</span>
+                <span>Click để sắp xếp A-Z / Z-A</span>
+              </div>
+              <div className="flex items-center">
+                <span className="font-medium mr-1">Email:</span>
+                <span>Click để sắp xếp A-Z / Z-A</span>
+              </div>
+            </div>
+          </div>
         </div>
+
         {/* Table Section */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-6 bg-gradient-to-r from-blue-500 to-indigo-600">
@@ -431,8 +479,11 @@ const ManageUser = () => {
             size="middle"
             className="!border-none"
             scroll={{ x: 1000 }}
+            // Thêm default sort theo ID tăng dần
+            defaultSortOrder="ascend"
           />
         </div>
+
         <Modal
           title={
             <div className="flex items-center text-xl font-bold text-gray-800">
