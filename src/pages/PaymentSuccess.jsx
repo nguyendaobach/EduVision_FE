@@ -149,14 +149,11 @@ const PaymentSuccess = () => {
   }, []);
 
   const handleBackToDashboard = () => {
-    // Đảm bảo Dashboard sẽ refresh khi user quay lại
+    // Set flag để Dashboard biết cần refresh
     localStorage.setItem("refreshDashboard", "true");
 
-    // Sử dụng navigate với replace để thay thế history entry
-    navigate("/dashboard", {
-      replace: true,
-      state: { fromPayment: true }, // Thêm state để Dashboard biết user từ payment
-    });
+    // Sử dụng window.location.assign thay vì href (tốt hơn cho SPA)
+    window.location.assign("/dashboard");
   };
 
   if (loading) {
