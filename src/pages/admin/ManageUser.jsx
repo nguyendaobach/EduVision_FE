@@ -427,27 +427,6 @@ const ManageUser = () => {
               </div>
             </div>
           </div>
-
-          {/* Sort Instructions */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2">
-              📋 Hướng dẫn sắp xếp:
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-blue-700">
-              <div className="flex items-center">
-                <span className="font-medium mr-1">ID:</span>
-                <span>Click để sắp xếp từ thấp đến cao / cao đến thấp</span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-medium mr-1">Họ tên:</span>
-                <span>Click để sắp xếp A-Z / Z-A</span>
-              </div>
-              <div className="flex items-center">
-                <span className="font-medium mr-1">Email:</span>
-                <span>Click để sắp xếp A-Z / Z-A</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Table Section */}

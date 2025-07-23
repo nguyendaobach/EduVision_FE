@@ -34,43 +34,83 @@ const DemoSection = ({
   isLoading,
 }) => {
   const dispatch = useDispatch();
-  // Sử dụng state nội bộ nếu không truyền từ props
-  const [isGenerating, setIsGenerating] = useState(false);
+  // Xóa isGenerating state - chỉ dùng generatedContent và isCreating
   const [generatedContent, setGeneratedContent] = useState(null);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [template, setTemplate] = useState(1);
+  const [isCreating, setIsCreating] = useState(false); // State để track đang tạo
   const notify = useNotify();
 
   useEffect(() => {
     listenFcmMessage((payload) => {
       const { notification, data } = payload;
+
+      console.log("FCM received:", payload); // Debug log
+
       if (data?.type === "slide_generated") {
         notify.success("Slide mới đã được tạo!");
-        if (data.slideUrl) setGeneratedContent({ slideUrl: data.slideUrl }); // Only slide
+        if (data.slideUrl) {
+          setGeneratedContent({ slideUrl: data.slideUrl });
+          setIsCreating(false);
+        }
       } else if (data?.type === "video_generated") {
         notify.success("Video mới đã được tạo!");
-        if (data.videoUrl) setGeneratedContent({ videoUrl: data.videoUrl }); // Only video
-      } else if (data?.type === "slide_and_video_generated") {
-        if (selectedMode === "slides" && data.slideUrl) {
-          setGeneratedContent({ slideUrl: data.slideUrl });
-        } else if (selectedMode === "video" && data.videoUrl) {
-          setGeneratedContent({ videoUrl: data.videoUrl });
-        } else {
-          setGeneratedContent(null);
+        if (data.videoUrl) {
+          setGeneratedContent((prev) => ({
+            ...prev,
+            videoUrl: data.videoUrl,
+          }));
+          setIsCreating(false);
         }
+      } else if (data?.type === "slide_and_video_generated") {
         notify.success("Nội dung đã được tạo!");
+        setGeneratedContent({
+          slideUrl: data.slideUrl,
+          videoUrl: data.videoUrl,
+        });
+        setIsCreating(false);
       } else {
         notify.info(notification?.title || "Thông báo mới", notification?.body);
       }
     });
-  }, [notify, selectedMode]);
+  }, [notify]);
+  // Tự động tăng progress khi đang tạo
+  useEffect(() => {
+    let interval;
+    if (
+      isCreating &&
+      !(
+        (selectedMode === "slides" && generatedContent?.slideUrl) ||
+        (selectedMode === "video" && generatedContent?.videoUrl)
+      )
+    ) {
+      interval = setInterval(() => {
+        setGenerationProgress((prev) => {
+          if (prev >= 95) return prev; // Dừng ở 95% chờ response
+          return prev + Math.random() * 3; // Tăng random
+        });
+      }, 1000);
+    } else if (
+      (selectedMode === "slides" && generatedContent?.slideUrl) ||
+      (selectedMode === "video" && generatedContent?.videoUrl)
+    ) {
+      setGenerationProgress(100);
+    }
 
-  // Hàm gọi đúng API tạo slide hoặc video
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isCreating, generatedContent, selectedMode]);
+
+  // Hàm tạo nội dung
   const handleCreate = async () => {
     if (!selectedSubject || !selectedGrade || !selectedChapter) return;
-    setIsGenerating(true);
-    setGeneratedContent(null);
+
+    // Bắt đầu tạo
+    setIsCreating(true);
+    setGeneratedContent(null); // Reset content
     setGenerationProgress(0);
+
     const payload = {
       subject: selectedSubject,
       chapter: selectedChapter,
@@ -79,7 +119,9 @@ const DemoSection = ({
       template: template,
       mode: selectedMode,
     };
+
     console.log("Payload gửi lên:", payload);
+
     try {
       let result;
       if (selectedMode === "slides") {
@@ -87,23 +129,41 @@ const DemoSection = ({
       } else {
         result = await dispatch(generalAPI.createVideo(payload));
       }
+
       const data = result?.payload || result;
       console.log("Kết quả trả về:", data);
-      if (selectedMode === "slides" && data && data.slideUrl) {
+
+      // Xử lý kết quả ngay lập tức nếu có URL
+      if (selectedMode === "slides" && data?.slideUrl) {
         setGeneratedContent({ slideUrl: data.slideUrl });
-      } else if (selectedMode === "video" && data && data.videoUrl) {
+        setIsCreating(false);
+        setGenerationProgress(100);
+      } else if (selectedMode === "video" && data?.videoUrl) {
         setGeneratedContent({ videoUrl: data.videoUrl });
-      } else {
-        setGeneratedContent(null);
+        setIsCreating(false);
+        setGenerationProgress(100);
       }
-      setGenerationProgress(100);
+      // Nếu không có URL ngay lập tức, chờ FCM message
     } catch (error) {
-      setGeneratedContent(null);
       console.error("Lỗi tạo nội dung:", error);
-    } finally {
-      setIsGenerating(false);
+      setGeneratedContent(null);
+      setIsCreating(false);
+      setGenerationProgress(0);
     }
   };
+
+  // Logic hiển thị overlay: hiện khi đang tạo và chưa có URL tương ứng với mode
+  const shouldShowOverlay =
+    isCreating &&
+    (selectedMode === "slides"
+      ? !generatedContent?.slideUrl // Mode slides: chỉ tắt khi có slideUrl
+      : !generatedContent?.videoUrl); // Mode video: chỉ tắt khi có videoUrl
+
+  // Logic hiển thị content: có content và có URL tương ứng với mode
+  const shouldShowContent =
+    generatedContent &&
+    ((selectedMode === "slides" && generatedContent.slideUrl) ||
+      (selectedMode === "video" && generatedContent.videoUrl));
 
   return (
     <section className="py-12 bg-gradient-to-b from-gray-50 to-white">
@@ -187,10 +247,10 @@ const DemoSection = ({
                     {isLoading
                       ? "Đang tải bài học..."
                       : !selectedSubject || !selectedGrade
-                        ? "Vui lòng chọn môn học và lớp trước"
-                        : chapters.length === 0
-                          ? "Không có bài học"
-                          : "Chọn bài học"}
+                      ? "Vui lòng chọn môn học và lớp trước"
+                      : chapters.length === 0
+                      ? "Không có bài học"
+                      : "Chọn bài học"}
                   </option>
                   {chapters.map((chapter) => (
                     <option key={chapter} value={chapter}>
@@ -206,8 +266,9 @@ const DemoSection = ({
               </div>
             </div>
           </div>
+
           {/* Chọn template */}
-          <div>
+          <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <FaShapes className="w-4 h-4 inline mr-1" /> Chọn template
             </label>
@@ -226,6 +287,7 @@ const DemoSection = ({
               <ChevronDown className="absolute right-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none" />
             </div>
           </div>
+
           {/* Chọn chế độ */}
           <div className="mb-8">
             <h4 className="text-sm font-medium text-gray-700 mb-4">
@@ -239,18 +301,20 @@ const DemoSection = ({
                 <div
                   key={mode.value}
                   onClick={() => setSelectedMode(mode.value)}
-                  className={`border rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 transform ${selectedMode === mode.value
-                    ? "border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-md"
-                    : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-sm"
-                    }`}
+                  className={`border rounded-xl p-5 cursor-pointer transition-all duration-200 hover:scale-105 transform ${
+                    selectedMode === mode.value
+                      ? "border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100 shadow-md"
+                      : "border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 hover:shadow-sm"
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div
-                        className={`w-5 h-5 mr-3 rounded-full border-2 flex items-center justify-center ${selectedMode === mode.value
-                          ? "border-purple-500"
-                          : "border-gray-300"
-                          }`}
+                        className={`w-5 h-5 mr-3 rounded-full border-2 flex items-center justify-center ${
+                          selectedMode === mode.value
+                            ? "border-purple-500"
+                            : "border-gray-300"
+                        }`}
                       >
                         {selectedMode === mode.value && (
                           <div className="w-3 h-3 rounded-full bg-purple-500"></div>
@@ -274,6 +338,7 @@ const DemoSection = ({
               ))}
             </div>
           </div>
+
           {/* Hiển thị thông tin đã chọn */}
           {(selectedSubject || selectedGrade || selectedChapter) && (
             <div className="mb-8 p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 shadow-sm">
@@ -321,6 +386,7 @@ const DemoSection = ({
               </div>
             </div>
           )}
+
           {/* Nút tạo nội dung */}
           <div className="text-center">
             <button
@@ -329,11 +395,11 @@ const DemoSection = ({
                 !selectedSubject ||
                 !selectedGrade ||
                 !selectedChapter ||
-                isGenerating
+                isCreating
               }
               className="group relative bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold py-5 px-12 rounded hover:from-purple-600 hover:to-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center mx-auto shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:transform-none disabled:shadow-md"
             >
-              {isGenerating ? (
+              {isCreating ? (
                 <>
                   <Loader className="w-6 h-6 mr-3 animate-spin" />
                   <span className="text-lg">Đang tạo nội dung...</span>
@@ -355,33 +421,44 @@ const DemoSection = ({
               vào độ phức tạp)
             </p>
           </div>
-          {/* Hiển thị tiến trình và kết quả */}
-          {(generatedContent || isGenerating) && (
+
+          {/* Khu vực hiển thị kết quả */}
+          {(shouldShowOverlay || shouldShowContent) && (
             <div className="relative mt-8 p-6 bg-white rounded-lg border border-purple-200 shadow-md animate-in slide-in-from-bottom-4 duration-500">
-              {/* Overlay loading khi đang tạo */}
-              {isGenerating && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/70 z-20 rounded-lg">
-                  <Loader className="w-12 h-12 text-purple-600 animate-spin mb-2" />
-                  <span className="text-lg font-semibold text-purple-700">Đang tạo nội dung...</span>
+              {/* Overlay loading - chỉ hiện khi đang tạo và chưa có URL tương ứng */}
+              {shouldShowOverlay && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm z-20 rounded-lg">
+                  <Loader className="w-12 h-12 text-purple-600 animate-spin mb-4" />
+                  <span className="text-lg font-semibold text-purple-700 mb-2">
+                    Đang tạo {selectedMode === "slides" ? "slides" : "video"}...
+                  </span>
+                  <div className="text-sm text-gray-600 text-center max-w-md">
+                    {selectedMode === "slides"
+                      ? "AI đang phân tích nội dung và tạo slides chuyên nghiệp..."
+                      : "AI đang tạo script, render video và xử lý âm thanh..."}
+                  </div>
                 </div>
               )}
+
+              {/* Header */}
               <h3 className="text-xl font-medium text-purple-800 mb-6 flex items-center">
-                {isGenerating ? (
+                {shouldShowOverlay ? (
                   <>
-                    <Loader className="w-5 h-5 mr-2 animate-spin text-purple-600" />{" "}
-                    Đang tạo nội dung...
+                    <Loader className="w-5 h-5 mr-2 animate-spin text-purple-600" />
+                    Đang tạo {selectedMode === "slides" ? "slides" : "video"}...
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="w-5 h-5 mr-2 text-green-500 animate-pulse" />{" "}
-                    Nội dung đã tạo thành công
+                    <CheckCircle className="w-5 h-5 mr-2 text-green-500 animate-pulse" />
+                    {selectedMode === "slides" ? "Slides" : "Video"} đã tạo
+                    thành công
                   </>
                 )}
               </h3>
-              {/* NỔI BẬT LINK SLIDE SAU KHI TẠO */}
 
-              {isGenerating && (
-                <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+              {/* Progress bar - chỉ hiển thị khi overlay đang hiện */}
+              {shouldShowOverlay && (
+                <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center">
                       <Loader className="w-6 h-6 mr-3 animate-spin text-purple-600" />
@@ -435,105 +512,102 @@ const DemoSection = ({
                   </div>
                 </div>
               )}
-              {/* Hiển thị slide URL */}
-              {!isGenerating &&
-                generatedContent &&
-                generatedContent.slideUrl &&
-                selectedMode === "slides" && (
-                  <div className="mb-8 animate-in fade-in-50 duration-700 delay-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium text-gray-800 flex items-center">
-                        <Presentation className="w-4 h-4 mr-2 text-purple-600" />{" "}
-                        Slides bài giảng
-                      </h4>
-                      <a
-                        href={generatedContent.slideUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-purple-600 hover:text-purple-800 flex items-center hover:underline font-medium transition-colors duration-200"
-                      >
-                        Mở trong tab mới <ArrowRight className="w-4 h-4 ml-1" />
-                      </a>
-                    </div>
-                    <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <iframe
-                        src={generatedContent.slideUrl}
-                        className="absolute inset-0 w-full h-full"
-                        frameBorder="0"
-                        title="Slides bài giảng"
-                        allowFullScreen
-                      ></iframe>
-                    </div>
-                  </div>
-                )}
-              {/* Hiển thị video URL nếu có */}
-              {!isGenerating &&
-                generatedContent &&
-                generatedContent.videoUrl &&
-                selectedMode === "video" && (
-                  <div className="animate-in fade-in-50 duration-700 delay-300">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium text-gray-800 flex items-center">
-                        <Play className="w-4 h-4 mr-2 text-purple-600" /> Video
-                        bài giảng
-                      </h4>
-                      <a
-                        href={generatedContent.videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-purple-600 hover:text-purple-800 flex items-center hover:underline font-medium transition-colors duration-200"
-                      >
-                        Mở trong tab mới <ArrowRight className="w-4 h-4 ml-1" />
-                      </a>
-                    </div>
-                    <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
-                      <video
-                        src={generatedContent.videoUrl}
-                        className="absolute inset-0 w-full h-full"
-                        controls
-                        title="Video bài giảng"
-                      ></video>
-                    </div>
-                  </div>
-                )}
-              {/* Nút tải xuống hoặc chia sẻ */}
-              {!isGenerating &&
-                generatedContent &&
-                ((generatedContent.slideUrl && selectedMode === "slides") ||
-                  (generatedContent.videoUrl && selectedMode === "video")) && (
-                  <div className="mt-6 flex flex-wrap gap-3 animate-in fade-in-50 duration-700 delay-400">
-                    {generatedContent.slideUrl && selectedMode === "slides" && (
-                      <a
-                        href={generatedContent.slideUrl}
-                        download
-                        className="inline-flex items-center px-4 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
-                      >
-                        Tải slide
-                      </a>
-                    )}
-                    {generatedContent.videoUrl && selectedMode === "video" && (
-                      <a
-                        href={generatedContent.videoUrl}
-                        download
-                        className="inline-flex items-center px-4 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
-                      >
-                        Tải video
-                      </a>
-                    )}
-                    <button
-                      onClick={() => {
-                        const urlToCopy =
-                          (selectedMode === "slides"
-                            ? generatedContent.slideUrl
-                            : generatedContent.videoUrl) || "";
-                        if (urlToCopy) navigator.clipboard.writeText(urlToCopy);
-                      }}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
+
+              {/* Hiển thị slide - chỉ khi có slideUrl và mode là slides */}
+              {generatedContent?.slideUrl && selectedMode === "slides" && (
+                <div className="mb-8 animate-in fade-in-50 duration-700 delay-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-gray-800 flex items-center">
+                      <Presentation className="w-4 h-4 mr-2 text-purple-600" />
+                      Slides bài giảng
+                    </h4>
+                    <a
+                      href={generatedContent.slideUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-600 hover:text-purple-800 flex items-center hover:underline font-medium transition-colors duration-200"
                     >
-                      Sao chép liên kết
-                    </button>
+                      Mở trong tab mới <ArrowRight className="w-4 h-4 ml-1" />
+                    </a>
                   </div>
-                )}
+                  <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <iframe
+                      src={generatedContent.slideUrl}
+                      className="absolute inset-0 w-full h-full"
+                      frameBorder="0"
+                      title="Slides bài giảng"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+
+              {/* Hiển thị video - chỉ khi có videoUrl và mode là video */}
+              {generatedContent?.videoUrl && selectedMode === "video" && (
+                <div className="animate-in fade-in-50 duration-700 delay-300">
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-medium text-gray-800 flex items-center">
+                      <Play className="w-4 h-4 mr-2 text-purple-600" />
+                      Video bài giảng
+                    </h4>
+                    <a
+                      href={generatedContent.videoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-purple-600 hover:text-purple-800 flex items-center hover:underline font-medium transition-colors duration-200"
+                    >
+                      Mở trong tab mới <ArrowRight className="w-4 h-4 ml-1" />
+                    </a>
+                  </div>
+                  <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <video
+                      src={generatedContent.videoUrl}
+                      className="absolute inset-0 w-full h-full"
+                      controls
+                      title="Video bài giảng"
+                    ></video>
+                  </div>
+                </div>
+              )}
+
+              {/* Nút tải xuống - chỉ hiển thị khi có content */}
+              {shouldShowContent && (
+                <div className="mt-6 flex flex-wrap gap-3 animate-in fade-in-50 duration-700 delay-400">
+                  {generatedContent?.slideUrl && selectedMode === "slides" && (
+                    <a
+                      href={generatedContent.slideUrl}
+                      download
+                      className="inline-flex items-center px-4 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
+                    >
+                      Tải slide
+                    </a>
+                  )}
+                  {generatedContent?.videoUrl && selectedMode === "video" && (
+                    <a
+                      href={generatedContent.videoUrl}
+                      download
+                      className="inline-flex items-center px-4 py-2 border border-purple-500 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
+                    >
+                      Tải video
+                    </a>
+                  )}
+                  <button
+                    onClick={() => {
+                      const urlToCopy =
+                        (selectedMode === "slides"
+                          ? generatedContent?.slideUrl
+                          : generatedContent?.videoUrl) || "";
+                      if (urlToCopy) {
+                        navigator.clipboard.writeText(urlToCopy);
+                        notify.success("Đã sao chép liên kết!");
+                      }
+                    }}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors duration-200 hover:scale-105 transform"
+                  >
+                    Sao chép liên kết
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
